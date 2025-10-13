@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Shield, Users, MessageSquare, Settings, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  Loader2,
+  LayoutDashboard,
+  UserCheck,
+} from "lucide-react";
+import { getAdminAnalyticsAction } from "@/app/actions/admin";
 import { getCurrentUserAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +26,12 @@ export default function ModeratorPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<{
+    totalUsers: number;
+    totalAdmins: number;
+    totalModerators: number;
+  } | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -36,6 +49,13 @@ export default function ModeratorPage() {
     };
     fetchUser();
   }, [router]);
+
+  useEffect(() => {
+    getAdminAnalyticsAction().then((data) => {
+      setAnalytics(data as any);
+      setAnalyticsLoading(false);
+    });
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -73,78 +93,78 @@ export default function ModeratorPage() {
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           variants={containerVariants}
           initial="hidden"
-          animate="visible"
-        >
+          animate="visible">
           <motion.div variants={itemVariants}>
-            <Card className="hover:bg-accent hover:border-primary transition-colors">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  Content Moderation
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Users
                 </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Review and moderate user-generated content, comments, and posts.
-                </p>
+                {analyticsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    {analytics?.totalUsers}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
-
           <motion.div variants={itemVariants}>
-            <Card className="hover:bg-accent hover:border-primary transition-colors">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  User Management
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Moderators
                 </CardTitle>
+                <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Manage user accounts, view user activity, and handle reports.
-                </p>
+                {analyticsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    {analytics?.totalModerators}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
-
           <motion.div variants={itemVariants}>
-            <Card className="hover:bg-accent hover:border-primary transition-colors">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Community Support
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Admins
                 </CardTitle>
+                <UserCheck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Respond to user inquiries and provide community support.
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card className="hover:bg-accent hover:border-primary transition-colors">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-primary" />
-                  Moderation Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Configure moderation rules, filters, and automated responses.
-                </p>
+                {analyticsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    {analytics?.totalAdmins}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
         </motion.div>
 
         <div className="mt-12">
-          <h2 className="text-2xl font-semibold font-serif mb-4">Welcome, {user?.name}</h2>
+          <h2 className="text-2xl font-semibold font-serif mb-4">
+            Welcome, {user?.name}
+          </h2>
           <p className="text-muted-foreground">
-            You have moderator privileges. Use the tools above to manage content and support the community.
+            View totals and manage users & moderators.
           </p>
+          <div className="mt-4">
+            <Button onClick={() => router.push("/moderator/users")}>
+              Open Users
+            </Button>
+          </div>
         </div>
       </div>
     </main>

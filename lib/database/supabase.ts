@@ -59,8 +59,17 @@ export const SupabaseAdapter: DatabaseAdapter = {
       .from("users")
       .select("*", { count: "exact", head: true })
       .eq("role", "admin");
-    if (totalError || adminError) console.error(totalError || adminError);
-    return { totalUsers: totalUsers ?? 0, totalAdmins: totalAdmins ?? 0 };
+    const { count: totalModerators, error: modError } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "moderator");
+    if (totalError || adminError || modError)
+      console.error(totalError || adminError || modError);
+    return {
+      totalUsers: totalUsers ?? 0,
+      totalAdmins: totalAdmins ?? 0,
+      totalModerators: totalModerators ?? 0,
+    };
   },
   async getPaginatedUsers({ pageIndex, pageSize, query, sort }) {
     const supabase = await getSupabaseClient();

@@ -42,9 +42,24 @@ const formSchema = z.object({
 interface EditUserDialogProps {
   user: User | null;
   onOpenChange: (open: boolean) => void;
+  allowedRoles?: UserRole[];
 }
 
-export function EditUserDialog({ user, onOpenChange }: EditUserDialogProps) {
+export function EditUserDialog({
+  user,
+  onOpenChange,
+  allowedRoles,
+}: EditUserDialogProps) {
+  const permittedRoles =
+    allowedRoles && allowedRoles.length
+      ? allowedRoles
+      : (getAllRoles() as UserRole[]);
+
+  const formSchema = z.object({
+    fullName: z.string().min(2, "Name must be at least 2 characters."),
+    role: z.enum(permittedRoles as [UserRole, ...UserRole[]]),
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -75,7 +90,8 @@ export function EditUserDialog({ user, onOpenChange }: EditUserDialogProps) {
         <DialogHeader>
           <DialogTitle>Edit User: {user?.fullName}</DialogTitle>
           <DialogDescription>
-            Update the user&apos;s details below. Click save when you&apos;re done.
+            Update the user&apos;s details below. Click save when you&apos;re
+            done.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -108,11 +124,13 @@ export function EditUserDialog({ user, onOpenChange }: EditUserDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {getRolesForSelect().map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
+                      {getRolesForSelect()
+                        .filter((r) => permittedRoles.includes(r.value))
+                        .map((role) => (
+                          <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

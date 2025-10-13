@@ -31,23 +31,28 @@ import {
 import { createAdminUserAction } from "@/app/actions/admin";
 import { getAllRoles, getRolesForSelect, UserRole } from "@/types/roles";
 
-const formSchema = z.object({
-  fullName: z.string().min(2),
-  email: z.string().email(),
-  role: z.enum(getAllRoles() as [UserRole, ...UserRole[]]),
-  password: z.string().optional(),
-});
-
 export function CreateUserDialog({
   open,
   onOpenChange,
+  allowedRoles,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  allowedRoles?: UserRole[];
 }) {
+  const permittedRoles = (
+    allowedRoles && allowedRoles.length ? allowedRoles : getAllRoles()
+  ) as UserRole[];
+
+  const formSchema = z.object({
+    fullName: z.string().min(2),
+    email: z.string().email(),
+    role: z.enum(permittedRoles as [UserRole, ...UserRole[]]),
+    password: z.string().optional(),
+  });
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { role: "user" },
+    defaultValues: { role: (permittedRoles[0] as UserRole) ?? "user" },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -115,11 +120,13 @@ export function CreateUserDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {getRolesForSelect().map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
+                      {getRolesForSelect()
+                        .filter((r) => permittedRoles.includes(r.value))
+                        .map((role) => (
+                          <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

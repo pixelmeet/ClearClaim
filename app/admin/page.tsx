@@ -12,6 +12,7 @@ import Link from "next/link";
 interface Analytics {
   totalUsers: number;
   totalAdmins: number;
+  totalModerators: number;
 }
 
 export default function AdminDashboard() {
@@ -50,20 +51,23 @@ export default function AdminDashboard() {
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
           variants={containerVariants}
           initial="hidden"
-          animate="visible"
-        >
+          animate="visible">
           {/* Analytics Section */}
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 {isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
-                  <div className="text-2xl font-bold">{analytics?.totalUsers}</div>
+                  <div className="text-2xl font-bold">
+                    {analytics?.totalUsers}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -71,14 +75,37 @@ export default function AdminDashboard() {
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Admins</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Admins
+                </CardTitle>
                 <UserCheck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 {isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
-                  <div className="text-2xl font-bold">{analytics?.totalAdmins}</div>
+                  <div className="text-2xl font-bold">
+                    {analytics?.totalAdmins}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Moderators
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <div className="text-2xl font-bold">
+                    {analytics?.totalModerators}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -92,8 +119,7 @@ export default function AdminDashboard() {
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
             variants={containerVariants}
             initial="hidden"
-            animate="visible"
-          >
+            animate="visible">
             <motion.div variants={itemVariants}>
               <Link href="/admin/users">
                 <Card className="hover:bg-accent hover:border-primary transition-colors">

@@ -54,9 +54,14 @@ export const FirebaseAdapter: DatabaseAdapter = {
       .where("role", "==", "admin")
       .count()
       .get();
+    const totalModeratorsSnapshot = await usersCollection
+      .where("role", "==", "moderator")
+      .count()
+      .get();
     return {
       totalUsers: totalUsersSnapshot.data().count,
       totalAdmins: totalAdminsSnapshot.data().count,
+      totalModerators: totalModeratorsSnapshot.data().count,
     };
   },
   async getPaginatedUsers({ pageIndex, pageSize, query, sort }) {

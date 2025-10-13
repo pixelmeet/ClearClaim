@@ -176,8 +176,6 @@ export default function SignupPage() {
                   )}
                 />
 
-                {/* Uncomment to enable Role Selection for testing */}
-
                 {/* <FormField
                   control={form.control}
                   name="role"

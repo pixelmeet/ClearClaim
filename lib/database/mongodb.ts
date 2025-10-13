@@ -42,7 +42,8 @@ export const MongoDbAdapter: DatabaseAdapter = {
     const users = await getUsersCollection();
     const totalUsers = await users.countDocuments();
     const totalAdmins = await users.countDocuments({ role: "admin" });
-    return { totalUsers, totalAdmins };
+    const totalModerators = await users.countDocuments({ role: "moderator" });
+    return { totalUsers, totalAdmins, totalModerators };
   },
   async getPaginatedUsers({ pageIndex, pageSize, query, sort }) {
     const users = await getUsersCollection();
