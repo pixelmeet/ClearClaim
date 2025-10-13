@@ -15,6 +15,7 @@ export interface User {
   profilePic?: string;
   profilePicId?: string;
   username?: string;
+  postalCode?: string;
   dateOfBirth?: string;
   city?: string;
   state?: string;

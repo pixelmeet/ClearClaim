@@ -34,11 +34,6 @@ import { updateAdminUserAction } from "@/app/actions/admin";
 import { getAllRoles, getRolesForSelect, UserRole } from "@/types/roles";
 import { Loader2 } from "lucide-react";
 
-const formSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters."),
-  role: z.enum(getAllRoles() as [UserRole, ...UserRole[]]),
-});
-
 interface EditUserDialogProps {
   user: User | null;
   onOpenChange: (open: boolean) => void;

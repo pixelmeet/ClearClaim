@@ -1,6 +1,5 @@
 import { getFirebaseAdmin } from "./clients";
 import { DatabaseAdapter } from "@/types/database";
-import { GetUsersParams } from "@/types/pagination";
 import { User } from "@/types/user";
 
 const getUsersCollection = async () => {

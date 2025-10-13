@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,10 +31,15 @@ import {
   updateUserExtrasAction,
 } from "@/app/actions/user";
 import { canAccessRole, UserRole } from "@/types/roles";
-import { getProfileUserFields } from "@/types/user-schema";
+import {
+  getProfileUserFields,
+  buildUserExtraZodShape,
+  getFieldOptions,
+} from "@/types/user-schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -50,6 +56,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,11 +81,20 @@ interface User {
   name: string;
   email: string;
   role: UserRole;
+  [key: string]: unknown;
 }
 
-const formSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters."),
-});
+const createFormSchema = () => {
+  const baseSchema = z.object({
+    fullName: z.string().min(2, "Name must be at least 2 characters."),
+  });
+
+  const extraSchema = buildUserExtraZodShape();
+
+  return baseSchema.extend(extraSchema);
+};
+
+type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
 export default function UserPage() {
   const router = useRouter();
@@ -80,11 +102,13 @@ export default function UserPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
     null
   );
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const formSchema = createFormSchema();
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fullName: "" },
   });
@@ -95,7 +119,13 @@ export default function UserPage() {
         const currentUser = await getCurrentUserAction();
         if (currentUser) {
           setUser(currentUser);
-          form.reset({ fullName: currentUser.name });
+
+          const formValues: Record<string, unknown> = { fullName: currentUser.name };
+          getProfileUserFields().forEach((field) => {
+            formValues[field.name] = (currentUser as Record<string, unknown>)[field.name] || "";
+          });
+
+          form.reset(formValues);
         }
       } catch (error) {
         console.error("Failed to fetch user", error);
@@ -134,16 +164,53 @@ export default function UserPage() {
     setIsSubmitting(false);
   };
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || values.fullName === user.name) return;
+  async function onSubmit(values: FormData) {
+    if (!user) return;
     setIsSubmitting(true);
-    const result = await updateUserNameAction(values.fullName);
-    if (result.success) {
-      toast.success(result.message);
-      setUser((prev) => (prev ? { ...prev, name: values.fullName } : null));
-    } else {
-      toast.error(result.message);
+
+    try {
+      if (values.fullName !== user.name) {
+        const nameResult = await updateUserNameAction(
+          values.fullName as string
+        );
+        if (nameResult.success) {
+          setUser((prev) =>
+            prev ? { ...prev, name: values.fullName as string } : null
+          );
+        } else {
+          toast.error(nameResult.message);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const extraFields: Record<string, unknown> = {};
+      getProfileUserFields().forEach((field) => {
+        const currentValue = (user as Record<string, unknown>)[field.name];
+        const newValue = values[field.name as keyof typeof values];
+        if (newValue !== currentValue) {
+          extraFields[field.name] = newValue;
+        }
+      });
+
+      if (Object.keys(extraFields).length > 0) {
+        const extraResult = await updateUserExtrasAction(extraFields);
+        if (extraResult.success) {
+          setUser((prev) => (prev ? { ...prev, ...extraFields } : null));
+          toast.success("Profile updated successfully!");
+        } else {
+          toast.error(extraResult.message);
+        }
+      } else if (values.fullName === user.name) {
+        toast.info("No changes to save");
+      } else {
+        toast.success("Profile updated successfully!");
+      }
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error("Profile update error:", error);
     }
+
     setIsSubmitting(false);
   }
 
@@ -216,26 +283,28 @@ export default function UserPage() {
                   {getProfileUserFields().some((f) => f.ui === "file") && (
                     <div className="w-full flex flex-col items-center justify-center gap-3">
                       {(() => {
-                        const pic = (user as any)["profilePic"] as
+                        const pic = (user as Record<string, unknown>)["profilePic"] as
                           | string
                           | undefined;
                         const imgSrc =
                           pic && pic.length ? pic : "/images/user.png";
                         return (
-                          <img
+                          <Image
                             src={imgSrc}
                             alt="Profile"
+                            width={144}
+                            height={144}
                             className="h-28 w-28 sm:h-36 sm:w-36 rounded-full object-cover border"
                           />
                         );
                       })()}
-                      {(user as any)["profilePic"] ? (
+                      {(user as Record<string, unknown>)["profilePic"] ? (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={async () => {
                             try {
-                              const publicId = (user as any)["profilePicId"] as
+                              const publicId = (user as Record<string, unknown>)["profilePicId"] as
                                 | string
                                 | undefined;
                               if (publicId) {
@@ -258,7 +327,7 @@ export default function UserPage() {
                                     ...prev,
                                     profilePic: "",
                                     profilePicId: "",
-                                  } as any)
+                                  } as User)
                                 : prev
                             );
                             setProfilePicPreview(null);
@@ -282,7 +351,7 @@ export default function UserPage() {
                     {getProfileUserFields()
                       .filter((def) => def.ui !== "checkbox")
                       .map((def) => {
-                        const value = (user as any)[def.name];
+                        const value = (user as Record<string, unknown>)[def.name];
                         if (def.ui === "file") return null;
                         if (
                           value === undefined ||
@@ -306,7 +375,8 @@ export default function UserPage() {
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4">
+                    className="space-y-6">
+                    {/* Full Name Field */}
                     <FormField
                       control={form.control}
                       name="fullName"
@@ -316,202 +386,317 @@ export default function UserPage() {
                             <UserIcon className="h-4 w-4" /> Full Name
                           </FormLabel>
                           <FormControl>
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Your full name"
-                                {...field}
-                                disabled={isSubmitting}
-                              />
-                              <Button
-                                type="submit"
-                                size="icon"
-                                disabled={
-                                  isSubmitting ||
-                                  form.getValues().fullName === user.name
-                                }>
-                                {isSubmitting ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Save className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
+                            <Input
+                              placeholder="Your full name"
+                              {...field}
+                              value={field.value as string}
+                              disabled={isSubmitting}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {/* Dynamic Profile Fields */}
+                    {getProfileUserFields()
+                      .filter(
+                        (def) =>
+                          def.ui !== "checkbox" &&
+                          def.editableInProfile !== false
+                      )
+                      .map((def) => {
+                        if (def.ui === "file") {
+                          return (
+                            <FormField
+                              key={def.name}
+                              control={form.control}
+                              name={def.name}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{def.label}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        if (file.size > 2 * 1024 * 1024) {
+                                          toast.error(
+                                            "Profile picture must be 2 MB or smaller."
+                                          );
+                                          e.currentTarget.value = "";
+                                          return;
+                                        }
+                                        const objectUrl =
+                                          URL.createObjectURL(file);
+                                        setProfilePicPreview(objectUrl);
+                                        const formData = new FormData();
+                                        formData.append(
+                                          "folder",
+                                          "users/profilePics"
+                                        );
+                                        formData.append("file", file);
+                                        const res = await fetch(
+                                          "/api/files/upload",
+                                          {
+                                            method: "POST",
+                                            body: formData,
+                                          }
+                                        );
+                                        const data = await res.json();
+                                        const url = data?.uploads?.[0]?.url as
+                                          | string
+                                          | undefined;
+                                        const publicId = data?.uploads?.[0]
+                                          ?.public_id as string | undefined;
+                                        if (!url) return;
+
+                                        field.onChange(url);
+
+                                        const profilePicIdField =
+                                          form.getFieldState("profilePicId");
+                                        if (profilePicIdField) {
+                                          form.setValue(
+                                            "profilePicId",
+                                            publicId || ""
+                                          );
+                                        }
+
+                                        URL.revokeObjectURL(objectUrl);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          );
+                        }
+
+                        if (def.ui === "textarea") {
+                          return (
+                            <FormField
+                              key={def.name}
+                              control={form.control}
+                              name={def.name}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{def.label}</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      placeholder={def.placeholder}
+                                      {...field}
+                                      value={field.value as string}
+                                      disabled={isSubmitting}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          );
+                        }
+
+                        if (def.ui === "select") {
+                          return (
+                            <FormField
+                              key={def.name}
+                              control={form.control}
+                              name={def.name}
+                              render={({ field }) => {
+                                let options = def.options || [];
+                                if (def.dependsOn) {
+                                  const dependentValue = form.getValues(
+                                    def.dependsOn as keyof FormData
+                                  );
+                                  options = getFieldOptions(
+                                    def.name,
+                                    dependentValue as string
+                                  );
+                                }
+
+                                const dependentValue = def.dependsOn
+                                  ? form.getValues(
+                                      def.dependsOn as keyof FormData
+                                    )
+                                  : undefined;
+                                const isDisabled = Boolean(
+                                  isSubmitting ||
+                                    (def.dependsOn &&
+                                      (!dependentValue ||
+                                        dependentValue === ""))
+                                );
+
+                                return (
+                                  <FormItem>
+                                    <FormLabel>{def.label}</FormLabel>
+                                    <Select
+                                      onValueChange={(value) => {
+                                        field.onChange(value);
+
+                                        const fieldName = def.name as string;
+                                        if (fieldName === "country") {
+                                          form.setValue(
+                                            "state" as keyof FormData,
+                                            ""
+                                          );
+                                          form.setValue(
+                                            "city" as keyof FormData,
+                                            ""
+                                          );
+                                        } else if (fieldName === "state") {
+                                          form.setValue(
+                                            "city" as keyof FormData,
+                                            ""
+                                          );
+                                        }
+                                      }}
+                                      value={field.value as string}
+                                      disabled={isDisabled}>
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue
+                                            placeholder={`Select ${def.label}`}
+                                          />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="">None</SelectItem>
+                                        {options.map((opt) => (
+                                          <SelectItem
+                                            key={opt.value}
+                                            value={opt.value}>
+                                            {opt.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          );
+                        }
+
+                        if (def.ui === "date") {
+                          return (
+                            <FormField
+                              key={def.name}
+                              control={form.control}
+                              name={def.name}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{def.label}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      {...field}
+                                      value={field.value as string}
+                                      disabled={isSubmitting}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          );
+                        }
+
+                        if (def.ui === "url") {
+                          return (
+                            <FormField
+                              key={def.name}
+                              control={form.control}
+                              name={def.name}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{def.label}</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="url"
+                                      placeholder={def.placeholder}
+                                      {...field}
+                                      value={field.value as string}
+                                      disabled={isSubmitting}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          );
+                        }
+
+                        return (
+                          <FormField
+                            key={def.name}
+                            control={form.control}
+                            name={def.name}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>{def.label}</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder={def.placeholder}
+                                    {...field}
+                                    value={field.value as string}
+                                    disabled={isSubmitting}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        );
+                      })}
+
+                    {/* Read-only fields */}
+                    {getProfileUserFields()
+                      .filter((def) => def.editableInProfile === false)
+                      .map((def) => {
+                        const value = (user as Record<string, unknown>)[def.name];
+                        if (
+                          value === undefined ||
+                          value === null ||
+                          value === ""
+                        )
+                          return null;
+                        return (
+                          <div key={def.name} className="flex flex-col gap-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {def.label}
+                            </span>
+                            <span className="font-medium break-words">
+                              {String(value)}
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                    {/* Save Button */}
+                    <div className="flex justify-end pt-4">
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="min-w-[120px]">
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </form>
                 </Form>
-                {/* Dynamic editable fields */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  {getProfileUserFields()
-                    .filter((def) => def.ui !== "checkbox")
-                    .map((def) => {
-                      const current = (user as any)[def.name];
-                      const readOnly = def.editableInProfile === false;
-                      return (
-                        <div key={def.name} className="flex flex-col gap-1">
-                          <span className="text-xs text-muted-foreground">
-                            {def.label}
-                          </span>
-                          {readOnly ? (
-                            <span className="font-medium break-words">
-                              {String(current ?? "")}
-                            </span>
-                          ) : def.ui === "textarea" ? (
-                            <textarea
-                              className="rounded-md border bg-background p-2"
-                              defaultValue={String(
-                                (user as any)[def.name] ?? ""
-                              )}
-                              onBlur={async (e) => {
-                                const val = e.target.value;
-                                if (val === (user as any)[def.name]) return;
-                                await updateUserExtrasAction({
-                                  [def.name]: val,
-                                });
-                                setUser((prev) =>
-                                  prev
-                                    ? ({ ...prev, [def.name]: val } as any)
-                                    : prev
-                                );
-                              }}
-                            />
-                          ) : def.ui === "select" ? (
-                            <select
-                              className="rounded-md border bg-background p-2"
-                              defaultValue={
-                                ((user as any)[def.name] ?? "") as string
-                              }
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                await updateUserExtrasAction({
-                                  [def.name]: val,
-                                });
-                                setUser((prev) =>
-                                  prev
-                                    ? ({ ...prev, [def.name]: val } as any)
-                                    : prev
-                                );
-                              }}>
-                              <option value="">Select {def.label}</option>
-                              {(def.options || []).map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
-                          ) : def.ui === "date" ? (
-                            <input
-                              type="date"
-                              className="rounded-md border bg-background p-2"
-                              defaultValue={String(
-                                (user as any)[def.name] ?? ""
-                              )}
-                              onBlur={async (e) => {
-                                const val = e.target.value;
-                                if (val === (user as any)[def.name]) return;
-                                await updateUserExtrasAction({
-                                  [def.name]: val,
-                                });
-                                setUser((prev) =>
-                                  prev
-                                    ? ({ ...prev, [def.name]: val } as any)
-                                    : prev
-                                );
-                              }}
-                            />
-                          ) : def.ui === "url" ? (
-                            <input
-                              type="url"
-                              className="rounded-md border bg-background p-2"
-                              defaultValue={String(
-                                (user as any)[def.name] ?? ""
-                              )}
-                              onBlur={async (e) => {
-                                const val = e.target.value;
-                                if (val === (user as any)[def.name]) return;
-                                await updateUserExtrasAction({
-                                  [def.name]: val,
-                                });
-                                setUser((prev) =>
-                                  prev
-                                    ? ({ ...prev, [def.name]: val } as any)
-                                    : prev
-                                );
-                              }}
-                            />
-                          ) : def.ui === "file" ? (
-                            <input
-                              type="file"
-                              className="rounded-md border bg-background p-2"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                if (file.size > 2 * 1024 * 1024) {
-                                  alert(
-                                    "Profile picture must be 2 MB or smaller."
-                                  );
-                                  e.currentTarget.value = "";
-                                  return;
-                                }
-                                const objectUrl = URL.createObjectURL(file);
-                                setProfilePicPreview(objectUrl);
-                                const form = new FormData();
-                                form.append("folder", "users/profilePics");
-                                form.append("file", file);
-                                const res = await fetch("/api/files/upload", {
-                                  method: "POST",
-                                  body: form,
-                                });
-                                const data = await res.json();
-                                const url = data?.uploads?.[0]?.url as
-                                  | string
-                                  | undefined;
-                                const publicId = data?.uploads?.[0]
-                                  ?.public_id as string | undefined;
-                                if (!url) return;
-                                await updateUserExtrasAction({
-                                  [def.name]: url,
-                                  profilePicId: publicId,
-                                });
-                                setUser((prev) =>
-                                  prev
-                                    ? ({
-                                        ...prev,
-                                        [def.name]: url,
-                                        profilePicId: publicId,
-                                      } as any)
-                                    : prev
-                                );
-                                URL.revokeObjectURL(objectUrl);
-                              }}
-                            />
-                          ) : (
-                            <input
-                              className="rounded-md border bg-background p-2"
-                              defaultValue={String(
-                                (user as any)[def.name] ?? ""
-                              )}
-                              onBlur={async (e) => {
-                                const val = e.target.value;
-                                if (val === (user as any)[def.name]) return;
-                                await updateUserExtrasAction({
-                                  [def.name]: val,
-                                });
-                                setUser((prev) =>
-                                  prev
-                                    ? ({ ...prev, [def.name]: val } as any)
-                                    : prev
-                                );
-                              }}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
               </CardContent>
               <CardFooter className="flex flex-col items-start gap-4 border-t bg-muted/50 p-6">
                 <h3 className="font-semibold text-foreground">

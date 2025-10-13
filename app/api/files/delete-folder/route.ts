@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     });
 
     if (resources.resources.length) {
-      const publicIds = resources.resources.map((r: any) => r.public_id);
+      const publicIds = resources.resources.map((r: { public_id: string }) => r.public_id);
       await cloudinary.api.delete_resources(publicIds);
     }
 

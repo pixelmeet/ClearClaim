@@ -32,13 +32,11 @@ export async function getCurrentUserAction() {
       return null;
     }
 
-    const { passwordHash, otp, otpExpires, ...rest } = user as any;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, otp, otpExpires, ...rest } = user;
     return {
-      id: user.id,
-      name: user.fullName,
-      email: user.email,
-      role: user.role,
       ...rest,
+      name: user.fullName,
     };
   } catch (error) {
     console.error("Authentication error in server action:", error);

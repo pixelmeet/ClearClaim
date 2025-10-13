@@ -11,7 +11,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   getAllRoles,
-  getRolesForSelect,
   UserRole,
   canAccessRole,
 } from "@/types/roles";
@@ -42,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+// import { Checkbox } from "@/components/ui/checkbox";
 
 const passwordValidation = new RegExp(
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
@@ -75,7 +74,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const extraFields = (typeof window !== "undefined" ? [] : []) as any;
+  // const extraFields = (typeof window !== "undefined" ? [] : []) as any;
   const dynamicFields = getSignupUserFields().filter((f) => f.ui !== "checkbox");
   const twoPanel = dynamicFields.length > 0;
 
@@ -288,7 +287,7 @@ export default function SignupPage() {
                     <FormField
                       key={def.name}
                       control={form.control}
-                      name={def.name as any}
+                      name={def.name as keyof z.infer<typeof formSchema>}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{def.label}</FormLabel>

@@ -52,7 +52,7 @@ export default function ModeratorPage() {
 
   useEffect(() => {
     getAdminAnalyticsAction().then((data) => {
-      setAnalytics(data as any);
+      setAnalytics(data);
       setAnalyticsLoading(false);
     });
   }, []);

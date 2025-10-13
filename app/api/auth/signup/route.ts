@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const extras: Partial<User> = {};
     for (const def of getEnabledUserFields()) {
       const val = body?.[def.name];
-      if (val !== undefined) (extras as any)[def.name] = val;
+      if (val !== undefined) (extras as Record<string, unknown>)[def.name] = val;
     }
 
     const nowIso = new Date().toISOString();
