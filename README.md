@@ -94,7 +94,7 @@ Then open http://localhost:3000
 
 - Database adapters (pluggable)
   - `lib/database/index.ts#getDb()` selects adapter by `process.env.DATABASE_PROVIDER` in [supabase|mongodb|firebase]. Adapter is cached.
-  - `lib/database/types.ts` defines a strict `DatabaseAdapter` interface. All adapters implement:
+  - `types/database.ts` defines a strict `DatabaseAdapter` interface. All adapters implement:
     - `findUserByEmail`, `findUserById`
     - `createUser`, `updateUser`, `deleteUserById`
     - `getAdminAnalytics`
@@ -194,7 +194,7 @@ All endpoints are server-only; cookies are `httpOnly`, `sameSite=strict`, `secur
 
 
 ## Extending the Data Model
-1) Update `lib/database/types.ts` with new fields or interfaces.
+1) Update the relevant type files in `types/` directory with new fields or interfaces.
 2) Implement the changes in each adapter file (`supabase.ts`, `mongodb.ts`, `firebase.ts`).
 3) Update server actions and UI where needed.
 

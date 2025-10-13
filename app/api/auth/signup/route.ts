@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "@/lib/database";
-import { User } from "@/lib/database/types";
+import { User } from "@/types/user";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

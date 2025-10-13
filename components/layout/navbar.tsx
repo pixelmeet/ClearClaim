@@ -20,7 +20,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { NAVBAR } from "@/constants/layout/navbar-constants";
-import { getCurrentUserAction, logoutAction } from "@/app/actions/auth";
+import { getCurrentUserAction } from "@/app/actions/auth";
 
 interface User {
   id: string;
@@ -77,17 +77,23 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await logoutAction();
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+      });
 
-      setUser(null);
+      if (response.ok) {
+        setUser(null);
 
-      const protectedPaths = ["/admin", "/user", "/dashboard"];
-      const isonProtectedPage = protectedPaths.some((path) =>
-        pathname.startsWith(path)
-      );
+        const protectedPaths = ["/admin", "/user", "/dashboard"];
+        const isonProtectedPage = protectedPaths.some((path) =>
+          pathname.startsWith(path)
+        );
 
-      if (isonProtectedPage) {
-        router.push("/");
+        if (isonProtectedPage) {
+          router.push("/");
+        }
+      } else {
+        console.error("Logout failed:", response.statusText);
       }
     } catch (error) {
       console.error("Logout failed:", error);

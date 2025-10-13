@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { SortingState } from "@tanstack/react-table";
 import { ArrowLeft, Loader2, PlusCircle } from "lucide-react";
-import { User } from "@/lib/database/types";
+import { User } from "@/types/user";
 import { getUsersAction } from "@/app/actions/admin";
 import { DataTable } from "@/components/custom/data-table";
 import { getColumns } from "./columns";

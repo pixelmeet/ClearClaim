@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "./clients";
-import { DatabaseAdapter, User } from "./types";
+import { DatabaseAdapter } from "@/types/database";
+import { User } from "@/types/user";
 
 export const SupabaseAdapter: DatabaseAdapter = {
   async findUserByEmail(email) {

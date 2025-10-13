@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from './types';
+import { DatabaseAdapter } from '@/types/database';
 
 let cachedDbAdapter: DatabaseAdapter | null = null;
 

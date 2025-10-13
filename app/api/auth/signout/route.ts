@@ -7,12 +7,11 @@ export async function POST() {
       { status: 200 }
     );
 
-    // Clear the auth token cookie
     response.cookies.set("auth_token", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 0, // Expire immediately
+      maxAge: 0,
       path: "/",
     });
 
@@ -26,7 +25,6 @@ export async function POST() {
   }
 }
 
-// Also support GET method for convenience
 export async function GET() {
   return POST();
 }

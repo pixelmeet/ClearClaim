@@ -23,7 +23,7 @@ import {
   Sun,
 } from "lucide-react";
 
-import { getCurrentUserAction, logoutAction } from "@/app/actions/auth";
+import { getCurrentUserAction } from "@/app/actions/auth";
 import { updateUserNameAction, deleteUserAction } from "@/app/actions/user";
 
 import { Button } from "@/components/ui/button";
@@ -98,8 +98,19 @@ export default function UserPage() {
   }, [form]);
 
   const handleLogout = async () => {
-    await logoutAction();
-    router.push("/");
+    try {
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        router.push("/");
+      } else {
+        console.error("Logout failed:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   const handleDeleteAccount = async () => {
