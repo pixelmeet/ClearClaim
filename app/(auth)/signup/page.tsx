@@ -9,7 +9,13 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getAllRoles, getRolesForSelect, UserRole, canAccessRole } from "@/types/roles";
+import {
+  getAllRoles,
+  getRolesForSelect,
+  UserRole,
+  canAccessRole,
+} from "@/types/roles";
+import { getSignupUserFields, buildUserExtraZodShape } from "@/types/user-schema";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,17 +34,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const passwordValidation = new RegExp(
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
 );
+
+const extraShape = buildUserExtraZodShape();
 
 const formSchema = z
   .object({
@@ -54,6 +64,7 @@ const formSchema = z
 
     role: z.enum(getAllRoles() as [UserRole, ...UserRole[]]).optional(),
   })
+  .extend(extraShape)
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
@@ -64,6 +75,9 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const extraFields = (typeof window !== "undefined" ? [] : []) as any;
+  const dynamicFields = getSignupUserFields().filter((f) => f.ui !== "checkbox");
+  const twoPanel = dynamicFields.length > 0;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -72,6 +86,12 @@ export default function SignupPage() {
       email: "",
       password: "",
       confirmPassword: "",
+      ...Object.fromEntries(
+        getSignupUserFields().map((f) => [
+          f.name,
+          f.ui === "checkbox" ? false : "",
+        ])
+      ),
     },
   });
 
@@ -118,7 +138,7 @@ export default function SignupPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md">
+        className={`w-full ${twoPanel ? "max-w-5xl" : "max-w-md"}`}>
         <Card className="bg-card text-card-foreground shadow-lg">
           <CardHeader className="relative">
             <Button
@@ -139,8 +159,9 @@ export default function SignupPage() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4">
-                <FormField
+                className={`grid grid-cols-1 ${twoPanel ? "md:grid-cols-2" : "md:grid-cols-1"} gap-4`}>
+                <div className="space-y-4">
+                  <FormField
                   control={form.control}
                   name="fullName"
                   render={({ field }) => (
@@ -149,15 +170,19 @@ export default function SignupPage() {
                       <FormControl>
                         <Input
                           placeholder="John Doe"
-                          {...field}
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          onChange={field.onChange}
+                          ref={field.ref}
+                          value={(field.value as string) ?? ""}
                           disabled={isLoading}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-                <FormField
+                  />
+                  <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
@@ -167,44 +192,19 @@ export default function SignupPage() {
                         <Input
                           placeholder="john@example.com"
                           type="email"
-                          {...field}
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          onChange={field.onChange}
+                          ref={field.ref}
+                          value={(field.value as string) ?? ""}
                           disabled={isLoading}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-
-                {/* <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role (Testing)</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={isLoading}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {getRolesForSelect().map((role) => (
-                            <SelectItem key={role.value} value={role.value}>
-                              {role.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                /> */}
-
-                <FormField
+                  />
+                  <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
@@ -215,7 +215,11 @@ export default function SignupPage() {
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
-                            {...field}
+                            name={field.name}
+                            onBlur={field.onBlur}
+                            onChange={field.onChange}
+                            ref={field.ref}
+                            value={(field.value as string) ?? ""}
                             disabled={isLoading}
                           />
                           <Button
@@ -236,8 +240,8 @@ export default function SignupPage() {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-                <FormField
+                  />
+                  <FormField
                   control={form.control}
                   name="confirmPassword"
                   render={({ field }) => (
@@ -248,7 +252,11 @@ export default function SignupPage() {
                           <Input
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder="••••••••"
-                            {...field}
+                            name={field.name}
+                            onBlur={field.onBlur}
+                            onChange={field.onChange}
+                            ref={field.ref}
+                            value={(field.value as string) ?? ""}
                             disabled={isLoading}
                           />
                           <Button
@@ -271,17 +279,88 @@ export default function SignupPage() {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-                <Button
-                  type="submit"
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  disabled={isLoading}>
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    "Sign Up"
-                  )}
-                </Button>
+                  />
+                </div>
+
+                {twoPanel && (
+                  <div className="space-y-4">
+                    {dynamicFields.map((def) => (
+                    <FormField
+                      key={def.name}
+                      control={form.control}
+                      name={def.name as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{def.label}</FormLabel>
+                          <FormControl>
+                            {def.ui === "textarea" ? (
+                              <Textarea
+                                placeholder={def.placeholder || def.label}
+                                name={field.name}
+                                onBlur={field.onBlur}
+                                onChange={field.onChange}
+                                ref={field.ref}
+                                value={(field.value as string) ?? ""}
+                                disabled={isLoading}
+                              />
+                            ) : def.ui === "select" ? (
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value as string | undefined}>
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={def.placeholder || `Select ${def.label.toLowerCase()}`}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(def.options || []).map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : def.ui === "checkbox" ? (
+                              null
+                            ) : (
+                              <Input
+                                type={
+                                  def.ui === "date"
+                                    ? "date"
+                                    : def.ui === "url"
+                                    ? "url"
+                                    : "text"
+                                }
+                                placeholder={def.placeholder || def.label}
+                                name={field.name}
+                                onBlur={field.onBlur}
+                                onChange={field.onChange}
+                                ref={field.ref}
+                                value={(field.value as string) ?? ""}
+                                disabled={isLoading}
+                              />
+                            )}
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                  </div>
+                )}
+
+                <div className={`${twoPanel ? "md:col-span-2" : "md:col-span-1"} flex items-center justify-center pt-2`}>
+                  <Button
+                    type="submit"
+                    className="min-w-40 bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={isLoading}>
+                    {isLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Sign Up"
+                    )}
+                  </Button>
+                </div>
               </form>
             </Form>
             <div className="mt-4 text-center text-sm">

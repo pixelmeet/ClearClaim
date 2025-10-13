@@ -22,6 +22,24 @@ export async function updateUserNameAction(newName: string) {
   }
 }
 
+export async function updateUserExtrasAction(extras: Record<string, unknown>) {
+  const db = await getDb();
+  const user = await getCurrentUserAction();
+
+  if (!user) {
+    throw new Error("You must be logged in to update your profile.");
+  }
+
+  try {
+    await db.updateUser(user.id, { ...extras, updated_at: new Date().toISOString() });
+    revalidatePath("/user");
+    return { success: true, message: "Profile updated successfully." };
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    return { success: false, message: "Failed to update profile." };
+  }
+}
+
 export async function deleteUserAction() {
   const db = await getDb();
   const user = await getCurrentUserAction();

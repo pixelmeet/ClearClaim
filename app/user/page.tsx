@@ -24,8 +24,13 @@ import {
 } from "lucide-react";
 
 import { getCurrentUserAction } from "@/app/actions/auth";
-import { updateUserNameAction, deleteUserAction } from "@/app/actions/user";
+import {
+  updateUserNameAction,
+  deleteUserAction,
+  updateUserExtrasAction,
+} from "@/app/actions/user";
 import { canAccessRole, UserRole } from "@/types/roles";
+import { getProfileUserFields } from "@/types/user-schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +80,9 @@ export default function UserPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
+    null
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -204,6 +212,63 @@ export default function UserPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4 text-sm">
+                  {/* Prominent profile picture at top (only if a file field is enabled in schema) */}
+                  {getProfileUserFields().some((f) => f.ui === "file") && (
+                    <div className="w-full flex flex-col items-center justify-center gap-3">
+                      {(() => {
+                        const pic = (user as any)["profilePic"] as
+                          | string
+                          | undefined;
+                        const imgSrc =
+                          pic && pic.length ? pic : "/images/user.png";
+                        return (
+                          <img
+                            src={imgSrc}
+                            alt="Profile"
+                            className="h-28 w-28 sm:h-36 sm:w-36 rounded-full object-cover border"
+                          />
+                        );
+                      })()}
+                      {(user as any)["profilePic"] ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const publicId = (user as any)["profilePicId"] as
+                                | string
+                                | undefined;
+                              if (publicId) {
+                                await fetch("/api/files/delete", {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ publicId }),
+                                });
+                              }
+                            } catch {}
+                            await updateUserExtrasAction({
+                              profilePic: "",
+                              profilePicId: "",
+                            });
+                            setUser((prev) =>
+                              prev
+                                ? ({
+                                    ...prev,
+                                    profilePic: "",
+                                    profilePicId: "",
+                                  } as any)
+                                : prev
+                            );
+                            setProfilePicPreview(null);
+                          }}>
+                          Remove Photo
+                        </Button>
+                      ) : null}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-4">
                     <Mail className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium">{user.email}</span>
@@ -211,6 +276,31 @@ export default function UserPage() {
                   <div className="flex items-center gap-4">
                     <Shield className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium capitalize">{user.role}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {getProfileUserFields()
+                      .filter((def) => def.ui !== "checkbox")
+                      .map((def) => {
+                        const value = (user as any)[def.name];
+                        if (def.ui === "file") return null;
+                        if (
+                          value === undefined ||
+                          value === null ||
+                          value === ""
+                        )
+                          return null;
+                        return (
+                          <div key={def.name} className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">
+                              {def.label}
+                            </span>
+                            <span className="font-medium break-words">
+                              {String(value)}
+                            </span>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
                 <Form {...form}>
@@ -253,6 +343,175 @@ export default function UserPage() {
                     />
                   </form>
                 </Form>
+                {/* Dynamic editable fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  {getProfileUserFields()
+                    .filter((def) => def.ui !== "checkbox")
+                    .map((def) => {
+                      const current = (user as any)[def.name];
+                      const readOnly = def.editableInProfile === false;
+                      return (
+                        <div key={def.name} className="flex flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">
+                            {def.label}
+                          </span>
+                          {readOnly ? (
+                            <span className="font-medium break-words">
+                              {String(current ?? "")}
+                            </span>
+                          ) : def.ui === "textarea" ? (
+                            <textarea
+                              className="rounded-md border bg-background p-2"
+                              defaultValue={String(
+                                (user as any)[def.name] ?? ""
+                              )}
+                              onBlur={async (e) => {
+                                const val = e.target.value;
+                                if (val === (user as any)[def.name]) return;
+                                await updateUserExtrasAction({
+                                  [def.name]: val,
+                                });
+                                setUser((prev) =>
+                                  prev
+                                    ? ({ ...prev, [def.name]: val } as any)
+                                    : prev
+                                );
+                              }}
+                            />
+                          ) : def.ui === "select" ? (
+                            <select
+                              className="rounded-md border bg-background p-2"
+                              defaultValue={
+                                ((user as any)[def.name] ?? "") as string
+                              }
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                await updateUserExtrasAction({
+                                  [def.name]: val,
+                                });
+                                setUser((prev) =>
+                                  prev
+                                    ? ({ ...prev, [def.name]: val } as any)
+                                    : prev
+                                );
+                              }}>
+                              <option value="">Select {def.label}</option>
+                              {(def.options || []).map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : def.ui === "date" ? (
+                            <input
+                              type="date"
+                              className="rounded-md border bg-background p-2"
+                              defaultValue={String(
+                                (user as any)[def.name] ?? ""
+                              )}
+                              onBlur={async (e) => {
+                                const val = e.target.value;
+                                if (val === (user as any)[def.name]) return;
+                                await updateUserExtrasAction({
+                                  [def.name]: val,
+                                });
+                                setUser((prev) =>
+                                  prev
+                                    ? ({ ...prev, [def.name]: val } as any)
+                                    : prev
+                                );
+                              }}
+                            />
+                          ) : def.ui === "url" ? (
+                            <input
+                              type="url"
+                              className="rounded-md border bg-background p-2"
+                              defaultValue={String(
+                                (user as any)[def.name] ?? ""
+                              )}
+                              onBlur={async (e) => {
+                                const val = e.target.value;
+                                if (val === (user as any)[def.name]) return;
+                                await updateUserExtrasAction({
+                                  [def.name]: val,
+                                });
+                                setUser((prev) =>
+                                  prev
+                                    ? ({ ...prev, [def.name]: val } as any)
+                                    : prev
+                                );
+                              }}
+                            />
+                          ) : def.ui === "file" ? (
+                            <input
+                              type="file"
+                              className="rounded-md border bg-background p-2"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                if (file.size > 2 * 1024 * 1024) {
+                                  alert(
+                                    "Profile picture must be 2 MB or smaller."
+                                  );
+                                  e.currentTarget.value = "";
+                                  return;
+                                }
+                                const objectUrl = URL.createObjectURL(file);
+                                setProfilePicPreview(objectUrl);
+                                const form = new FormData();
+                                form.append("folder", "users/profilePics");
+                                form.append("file", file);
+                                const res = await fetch("/api/files/upload", {
+                                  method: "POST",
+                                  body: form,
+                                });
+                                const data = await res.json();
+                                const url = data?.uploads?.[0]?.url as
+                                  | string
+                                  | undefined;
+                                const publicId = data?.uploads?.[0]
+                                  ?.public_id as string | undefined;
+                                if (!url) return;
+                                await updateUserExtrasAction({
+                                  [def.name]: url,
+                                  profilePicId: publicId,
+                                });
+                                setUser((prev) =>
+                                  prev
+                                    ? ({
+                                        ...prev,
+                                        [def.name]: url,
+                                        profilePicId: publicId,
+                                      } as any)
+                                    : prev
+                                );
+                                URL.revokeObjectURL(objectUrl);
+                              }}
+                            />
+                          ) : (
+                            <input
+                              className="rounded-md border bg-background p-2"
+                              defaultValue={String(
+                                (user as any)[def.name] ?? ""
+                              )}
+                              onBlur={async (e) => {
+                                const val = e.target.value;
+                                if (val === (user as any)[def.name]) return;
+                                await updateUserExtrasAction({
+                                  [def.name]: val,
+                                });
+                                setUser((prev) =>
+                                  prev
+                                    ? ({ ...prev, [def.name]: val } as any)
+                                    : prev
+                                );
+                              }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
               </CardContent>
               <CardFooter className="flex flex-col items-start gap-4 border-t bg-muted/50 p-6">
                 <h3 className="font-semibold text-foreground">

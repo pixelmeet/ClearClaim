@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getDb } from "@/lib/database";
 import { User } from "@/types/user";
 import { UserRole } from "@/types/roles";
+import { getEnabledUserFields } from "@/types/user-schema";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -32,12 +33,23 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const extras: Partial<User> = {};
+    for (const def of getEnabledUserFields()) {
+      const val = body?.[def.name];
+      if (val !== undefined) (extras as any)[def.name] = val;
+    }
+
+    const nowIso = new Date().toISOString();
+
     const newUser: Omit<User, "otp" | "otpExpires"> = {
       id: uuidv4(),
       fullName,
       email: email.toLowerCase(),
       passwordHash,
       role: role as UserRole,
+      created_at: nowIso,
+      updated_at: nowIso,
+      ...extras,
     };
 
     const createdUser = await db.createUser(newUser);
