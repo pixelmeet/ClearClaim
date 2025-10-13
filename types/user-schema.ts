@@ -6,16 +6,16 @@ import { getCitiesByState } from "@/constants/locations/cities";
 export type UserExtraFieldName =
   // | "addressLine1"
   // | "addressLine2"
-  // | "gender"
+  | "gender"
   // | "bio"
-  // | "profilePic"
-  // | "username"
+  | "profilePic"
+  | "username"
   // | "postalCode"
   // | "dateOfBirth"
   // | "city"
   // | "state"
   // | "country";
-  "is_active";
+  // "is_active";
 
 export type UserFieldDef = {
   name: UserExtraFieldName;
@@ -30,36 +30,57 @@ export type UserFieldDef = {
 };
 
 export const USER_FIELD_DEFS: UserFieldDef[] = [
-  // { name: "addressLine1", label: "Address Line 1", ui: "textarea", placeholder: "123 Main St", contexts: ["profile"], editableInProfile: true },
-  // { name: "addressLine2", label: "Address Line 2", ui: "textarea", placeholder: "Apt, suite, etc.", contexts: ["profile"], editableInProfile: true },
   // {
-  //   name: "gender",
-  //   label: "Gender",
-  //   ui: "select",
-  //   options: [
-  //     { label: "Male", value: "Male" },
-  //     { label: "Female", value: "Female" },
-  //     { label: "Other", value: "Other" },
-  //   ],
-  //   contexts: ["signup", "profile"],
-  //   editableInProfile: true,
-  // },
-  // { name: "bio", label: "Bio", ui: "textarea", placeholder: "Tell us about yourself", contexts: ["profile"], editableInProfile: true },
-  // {
-  //   name: "profilePic",
-  //   label: "Profile Picture",
-  //   ui: "file",
+  //   name: "addressLine1",
+  //   label: "Address Line 1",
+  //   ui: "textarea",
+  //   placeholder: "123 Main St",
   //   contexts: ["profile"],
   //   editableInProfile: true,
   // },
   // {
-  //   name: "username",
-  //   label: "Username",
-  //   ui: "text",
-  //   required: true,
-  //   contexts: ["signup", "profile"],
-  //   editableInProfile: false,
+  //   name: "addressLine2",
+  //   label: "Address Line 2",
+  //   ui: "textarea",
+  //   placeholder: "Apt, suite, etc.",
+  //   contexts: ["profile"],
+  //   editableInProfile: true,
   // },
+  {
+    name: "gender",
+    label: "Gender",
+    ui: "select",
+    options: [
+      { label: "Male", value: "Male" },
+      { label: "Female", value: "Female" },
+      { label: "Other", value: "Other" },
+    ],
+    contexts: ["signup", "profile"],
+    editableInProfile: true,
+  },
+  // {
+  //   name: "bio",
+  //   label: "Bio",
+  //   ui: "textarea",
+  //   placeholder: "Tell us about yourself",
+  //   contexts: ["profile"],
+  //   editableInProfile: true,
+  // },
+  {
+    name: "profilePic",
+    label: "Profile Picture",
+    ui: "file",
+    contexts: ["profile"],
+    editableInProfile: true,
+  },
+  {
+    name: "username",
+    label: "Username",
+    ui: "text",
+    required: true,
+    contexts: ["signup", "profile"],
+    editableInProfile: false,
+  },
   // {
   //   name: "postalCode",
   //   label: "Postal Code",
@@ -101,7 +122,13 @@ export const USER_FIELD_DEFS: UserFieldDef[] = [
   //   editableInProfile: true,
   //   dependsOn: "state"
   // },
-  // { name: "is_active", label: "Active", ui: "checkbox", contexts: ["profile"], editableInProfile: true },
+  // {
+  //   name: "is_active",
+  //   label: "Active",
+  //   ui: "checkbox",
+  //   contexts: ["profile"],
+  //   editableInProfile: true,
+  // },
 ];
 
 export function getEnabledUserFields(): UserFieldDef[] {

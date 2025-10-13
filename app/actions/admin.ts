@@ -22,6 +22,7 @@ export async function createAdminUserAction(data: {
   email: string;
   role: UserRole;
   password?: string;
+  [key: string]: unknown;
 }) {
   const db = await getDb();
   const existingUser = await db.findUserByEmail(data.email);
@@ -31,12 +32,17 @@ export async function createAdminUserAction(data: {
   const password = data.password || Math.random().toString(36).slice(-12);
   const passwordHash = await bcrypt.hash(password, 10);
 
+  // Extract extra fields
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { fullName, email, role, password: _, ...extraFields } = data;
+
   const newUser = {
     id: uuidv4(),
-    fullName: data.fullName,
-    email: data.email.toLowerCase(),
-    role: data.role,
+    fullName,
+    email: email.toLowerCase(),
+    role,
     passwordHash,
+    ...extraFields,
   };
 
   await db.createUser(newUser);
@@ -49,7 +55,7 @@ export async function createAdminUserAction(data: {
 
 export async function updateAdminUserAction(
   id: string,
-  data: { fullName: string; role: UserRole }
+  data: { fullName: string; role: UserRole; [key: string]: unknown }
 ) {
   const db = await getDb();
   await db.updateUser(id, data);

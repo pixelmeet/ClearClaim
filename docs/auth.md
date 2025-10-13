@@ -166,6 +166,89 @@ export const USER_FIELD_DEFS: UserFieldDef[] = [
 - Add new fields to the `User` interface when enabling new profile fields
 - Fields should match the database schema
 
+### User Components (`components/user/`)
+
+**Purpose**: Reusable user-related components with modular field system
+
+**Components**:
+- `UserInfoCard`: Complete user profile card with form, display, and actions
+- `fields/`: Individual field components for each UI type
+  - `BaseField`: Base wrapper for all form fields
+  - `TextField`: Text input field
+  - `TextareaField`: Textarea field
+  - `DateField`: Date input field
+  - `UrlField`: URL input field
+  - `SelectField`: Select dropdown field
+  - `FileField`: File upload field
+  - `FieldFactory`: Renders appropriate field based on field definition
+- `index.ts`: Clean exports for easy importing
+
+**Usage**:
+```typescript
+import { UserInfoCard, TextField, SelectField } from "@/components/user";
+
+// Use the complete card
+<UserInfoCard 
+  user={user} 
+  onUserUpdate={handleUserUpdate}
+  variants={cardVariants}
+/>
+
+// Or use individual field components
+<TextField
+  name="username"
+  control={control}
+  label="Username"
+  placeholder="Enter username"
+/>
+```
+
+**Customization**:
+- Modify individual field components to change specific field behavior
+- Add new field types by creating new components in `fields/`
+- Update `FieldFactory` to handle new field types
+- Modify `UserInfoCard` to change the overall profile interface
+- Add new user-related components to the `/components/user/` directory
+
+### Admin Components (`components/admin/`)
+
+**Purpose**: Admin interface components for user management
+
+**Components**:
+- `users/create-user-dialog.tsx`: Dialog for creating new users with all user fields
+- `users/edit-user-dialog.tsx`: Dialog for editing existing users with all user fields
+- `users/delete-user-dialog.tsx`: Dialog for deleting users
+
+**Features**:
+- **Dynamic Field Support**: All admin components automatically support all user fields defined in the schema
+- **Role-Based Access**: Components respect role permissions and allowed roles
+- **Field Validation**: Uses the same validation schema as user components
+- **Dependent Dropdowns**: Supports country/state/city dependent selections
+- **File Uploads**: Supports profile picture uploads in create/edit dialogs
+
+**Usage**:
+```typescript
+import { CreateUserDialog, EditUserDialog } from "@/components/admin/users";
+
+<CreateUserDialog
+  open={isOpen}
+  onOpenChange={setIsOpen}
+  allowedRoles={["user", "moderator"]} // Optional: restrict roles
+/>
+
+<EditUserDialog
+  user={selectedUser}
+  onOpenChange={setIsOpen}
+  allowedRoles={["user", "moderator"]} // Optional: restrict roles
+/>
+```
+
+**Customization**:
+- Admin components automatically adapt to schema changes
+- Modify field behavior by updating the user field components
+- Add new field types by extending the user schema
+- Customize role restrictions by passing `allowedRoles` prop
+
 ## Database Configuration
 
 ### Supabase Setup (`docs/supabase-sql.md`)

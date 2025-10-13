@@ -13,8 +13,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import { updateAdminUserAction } from "@/app/actions/admin";
+import { getAllRoles, getRolesForSelect, UserRole } from "@/types/roles";
 import {
-  Form,
+  getProfileUserFields,
+  buildUserExtraZodShape,
+  getFieldOptions,
+} from "@/types/user-schema";
+import { FieldFactory, SelectField } from "@/components/user/fields";
+import {
   FormControl,
   FormField,
   FormItem,
@@ -22,16 +31,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { updateAdminUserAction } from "@/app/actions/admin";
-import { getAllRoles, getRolesForSelect, UserRole } from "@/types/roles";
 import { Loader2 } from "lucide-react";
 
 interface EditUserDialogProps {
@@ -50,27 +49,79 @@ export function EditUserDialog({
       ? allowedRoles
       : (getAllRoles() as UserRole[]);
 
-  const formSchema = z.object({
-    fullName: z.string().min(2, "Name must be at least 2 characters."),
-    role: z.enum(permittedRoles as [UserRole, ...UserRole[]]),
-  });
+  const createFormSchema = () => {
+    const baseSchema = z.object({
+      fullName: z.string().min(2, "Name must be at least 2 characters."),
+      role: z.enum(permittedRoles as [UserRole, ...UserRole[]]),
+    });
 
-  const form = useForm<z.infer<typeof formSchema>>({
+    const extraSchema = buildUserExtraZodShape();
+
+    return baseSchema.extend(extraSchema);
+  };
+
+  const formSchema = createFormSchema();
+  type FormData = z.infer<typeof formSchema>;
+
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
+  const handleSelectValueChange = (value: string, fieldName: string) => {
+    // Clear dependent fields when parent changes
+    if (fieldName === "country") {
+      form.setValue("state" as keyof FormData, "none");
+      form.setValue("city" as keyof FormData, "none");
+    } else if (fieldName === "state") {
+      form.setValue("city" as keyof FormData, "none");
+    }
+  };
+
   useEffect(() => {
     if (user) {
-      form.reset({
+      const formValues: Record<string, unknown> = {
         fullName: user.fullName,
         role: user.role,
+      };
+      
+      getProfileUserFields().forEach((field) => {
+        const value = (user as unknown as Record<string, unknown>)[field.name];
+        if (field.ui === "select") {
+          formValues[field.name] = value || "none";
+        } else {
+          formValues[field.name] = value || "";
+        }
       });
+      
+      form.reset(formValues);
     }
   }, [user, form]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormData) {
     if (!user) return;
-    const result = await updateAdminUserAction(user.id, values);
+    
+    // Prepare the data for the API
+    const userData = {
+      fullName: values.fullName as string,
+      role: values.role as UserRole,
+    };
+
+    // Collect extra fields
+    const extraFields: Record<string, unknown> = {};
+    getProfileUserFields().forEach((field) => {
+      let value = values[field.name as keyof typeof values];
+      
+      // Convert "none" to empty string for select fields
+      if (field.ui === "select" && value === "none") {
+        value = "";
+      }
+      
+      if (value !== undefined && value !== "") {
+        extraFields[field.name] = value;
+      }
+    });
+
+    const result = await updateAdminUserAction(user.id, { ...userData, ...extraFields });
     if (result.success) {
       toast.success("User Updated", { description: result.message });
       onOpenChange(false);
@@ -91,47 +142,73 @@ export function EditUserDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}>
+            {/* Basic Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
+                      <Input 
+                        placeholder="Enter full name" 
+                        {...field}
+                        value={field.value as string}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {getRolesForSelect()
-                        .filter((r) => permittedRoles.includes(r.value))
-                        .map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <SelectField
+                name="role"
+                control={form.control}
+                label="Role"
+                options={getRolesForSelect()
+                  .filter((r) => permittedRoles.includes(r.value))
+                  .map((role) => ({ label: role.label, value: role.value }))}
+                disabled={form.formState.isSubmitting}
+              />
+            </div>
+
+            {/* Dynamic User Fields */}
+            {getProfileUserFields()
+              .filter((def) => def.editableInProfile !== false)
+              .map((def) => {
+                // Handle select fields with dynamic options separately
+                if (def.ui === "select") {
+                  let options = def.options || [];
+                  if (def.dependsOn) {
+                    const dependentValue = form.getValues(def.dependsOn as keyof FormData) as string;
+                    options = getFieldOptions(def.name, dependentValue);
+                  }
+                  
+                  return (
+                    <SelectField
+                      key={def.name}
+                      name={def.name as keyof FormData}
+                      control={form.control}
+                      label={def.label}
+                      options={options}
+                      disabled={form.formState.isSubmitting}
+                      onValueChange={handleSelectValueChange}
+                    />
+                  );
+                }
+                
+                // Use field factory for other field types
+                return (
+                  <FieldFactory
+                    key={def.name}
+                    fieldDef={def}
+                    control={form.control}
+                    disabled={form.formState.isSubmitting}
+                    onSelectValueChange={handleSelectValueChange}
+                  />
+                );
+              })}
+
             <Button type="submit" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
