@@ -7,7 +7,7 @@ import { Background } from "@/components/home/background";
 
 export function Hero() {
   return (
-    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden font-sans pt-24 md:pt-0 bg-gradient-to-br from-[#f6f7fb] via-[#f2f7f4] to-[#fef7f3]">
+    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden font-sans pt-24 md:pt-0 bg-gradient-to-br from-background to-muted">
       <Background />
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6 py-16 md:py-0">

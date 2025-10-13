@@ -9,7 +9,7 @@ export function CTA() {
   const { badge, heading, features, buttons, dashboard } = ctaConfig;
 
   return (
-    <section className="py-24 px-4 relative overflow-hidden bg-gradient-to-br from-primary to-primary/90 font-sans">
+    <section className="py-24 px-4 relative overflow-hidden bg-gradient-to-b from-primary/50 to-primary/90 font-sans">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-0 left-0 w-96 h-96 bg-primary-foreground/5 rounded-full blur-3xl"

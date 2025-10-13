@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Merriweather, JetBrains_Mono } from "next/font/google";
+import { Oxanium, Merriweather, Fira_Code } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   },
 };
 
-const sans = Inter({
+const sans = Oxanium({
   subsets: ["latin"],
   variable: "--font-sans",
 });
@@ -22,7 +22,7 @@ const serif = Merriweather({
   variable: "--font-serif",
 });
 
-const mono = JetBrains_Mono({
+const mono = Fira_Code({
   subsets: ["latin"],
   variable: "--font-mono",
 });

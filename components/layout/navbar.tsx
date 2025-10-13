@@ -145,7 +145,7 @@ export function Navbar() {
             ))}
 
             {isLoading ? (
-              <div className="w-20 h-9 bg-gray-200 rounded-md animate-pulse"></div>
+              <div className="w-20 h-9 bg-muted rounded-md animate-pulse"></div>
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -153,7 +153,7 @@ export function Navbar() {
                     variant="outline"
                     className={`transition-all duration-300 shadow-sm rounded-md border-2 ${
                       scrolled
-                        ? "border-primary-foreground/20 text-primary-foreground hover:border-primary-foreground/40 hover:bg-primary-foreground/10"
+                        ? "border-primary-foreground/20 text-primary dark:text-primary-foreground dark:border-foreground/20 hover:border-foreground hover:bg-secondary"
                         : "border-primary/20 text-primary hover:border-primary/40 hover:bg-primary/5"
                     }`}>
                     <User className="h-4 w-4 mr-2" />
@@ -171,9 +171,9 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer">
+                    <Link href="/user" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
-                      Dashboard
+                      User Dashboard
                     </Link>
                   </DropdownMenuItem>
                   {(user.role === "admin" ||
@@ -188,7 +188,7 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="cursor-pointer text-red-600 focus:text-red-600">
+                    className="cursor-pointer text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </DropdownMenuItem>
@@ -201,7 +201,7 @@ export function Navbar() {
                 className={`transition-all duration-300 shadow-sm rounded-md
       ${
         scrolled
-          ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90 hover:text-primary-foreground"
+          ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
           : "bg-primary text-primary-foreground hover:bg-chart-2"
       }`}>
                 <Link href="/login">
@@ -257,22 +257,22 @@ export function Navbar() {
                         />
                       ))}
                       {isLoading ? (
-                        <div className="mt-6 w-full h-10 bg-gray-200 rounded-md animate-pulse"></div>
+                        <div className="mt-6 w-full h-10 bg-muted rounded-md animate-pulse"></div>
                       ) : user ? (
                         <div className="mt-6 space-y-3">
-                          <div className="p-3 bg-gray-50 rounded-lg border">
+                          <div className="p-3 bg-muted rounded-lg border">
                             <p className="font-medium text-sm">{user.name}</p>
-                            <p className="text-xs text-gray-500 truncate">
+                            <p className="text-xs text-muted-foreground truncate">
                               {user.email}
                             </p>
                           </div>
                           <Button asChild variant="outline" className="w-full">
                             <Link
-                              href="/dashboard"
+                              href="/user"
                               className="flex items-center justify-center gap-2"
                               onClick={() => setIsOpen(false)}>
                               <Settings className="h-4 w-4" />
-                              Dashboard
+                              User Dashboard
                             </Link>
                           </Button>
                           {(user.role === "admin" ||
