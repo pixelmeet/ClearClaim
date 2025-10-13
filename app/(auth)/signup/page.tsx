@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getAllRoles, getRolesForSelect, UserRole, canAccessRole } from "@/types/roles";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,13 +28,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
 
 const passwordValidation = new RegExp(
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
@@ -51,7 +52,7 @@ const formSchema = z
       ),
     confirmPassword: z.string(),
 
-    role: z.enum(["admin", "user"]).optional(),
+    role: z.enum(getAllRoles() as [UserRole, ...UserRole[]]).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -96,8 +97,10 @@ export default function SignupPage() {
 
       toast.success("Account created successfully!");
 
-      if (data.role === "admin") {
+      if (canAccessRole(data.role, "admin")) {
         router.push("/admin");
+      } else if (canAccessRole(data.role, "moderator")) {
+        router.push("/moderator");
       } else {
         router.push("/user");
       }
@@ -191,8 +194,11 @@ export default function SignupPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
+                          {getRolesForSelect().map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />

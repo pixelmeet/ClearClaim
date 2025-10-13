@@ -21,12 +21,13 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { NAVBAR } from "@/constants/layout/navbar-constants";
 import { getCurrentUserAction } from "@/app/actions/auth";
+import { canAccessRole, UserRole } from "@/types/roles";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
 
 export function Navbar() {
@@ -84,7 +85,7 @@ export function Navbar() {
       if (response.ok) {
         setUser(null);
 
-        const protectedPaths = ["/admin", "/user", "/dashboard"];
+        const protectedPaths = ["/admin", "/user", "/moderator", "/dashboard"];
         const isonProtectedPage = protectedPaths.some((path) =>
           pathname.startsWith(path)
         );
@@ -182,7 +183,15 @@ export function Navbar() {
                       User Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  {(user.role === "admin" ||
+                  {canAccessRole(user.role, "moderator") && user.role !== "admin" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/moderator" className="cursor-pointer">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Moderator Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {(canAccessRole(user.role, "admin") ||
                     user.email?.endsWith("@admin")) && (
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="cursor-pointer">
@@ -281,7 +290,21 @@ export function Navbar() {
                               User Dashboard
                             </Link>
                           </Button>
-                          {(user.role === "admin" ||
+                          {canAccessRole(user.role, "moderator") && user.role !== "admin" && (
+                            <Button
+                              asChild
+                              variant="outline"
+                              className="w-full">
+                              <Link
+                                href="/moderator"
+                                className="flex items-center justify-center gap-2"
+                                onClick={() => setIsOpen(false)}>
+                                <Shield className="h-4 w-4" />
+                                Moderator Dashboard
+                              </Link>
+                            </Button>
+                          )}
+                          {(canAccessRole(user.role, "admin") ||
                             user.email?.endsWith("@admin")) && (
                             <Button
                               asChild

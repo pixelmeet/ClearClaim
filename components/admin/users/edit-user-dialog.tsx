@@ -31,11 +31,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateAdminUserAction } from "@/app/actions/admin";
+import { getAllRoles, getRolesForSelect, UserRole } from "@/types/roles";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters."),
-  role: z.enum(["user", "admin"]),
+  role: z.enum(getAllRoles() as [UserRole, ...UserRole[]]),
 });
 
 interface EditUserDialogProps {
@@ -107,8 +108,11 @@ export function EditUserDialog({ user, onOpenChange }: EditUserDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      {getRolesForSelect().map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

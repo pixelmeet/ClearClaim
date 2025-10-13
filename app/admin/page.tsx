@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Users, UserCheck, Settings, Loader2 } from "lucide-react";
+import { ArrowLeft, Users, UserCheck, Loader2 } from "lucide-react";
 import { getAdminAnalyticsAction } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

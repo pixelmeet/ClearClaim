@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { UserRole, canAccessRole } from "@/types/roles";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -10,8 +11,9 @@ export async function middleware(request: NextRequest) {
 
   const isAdminPath = pathname.startsWith("/admin");
   const isUserPath = pathname.startsWith("/user");
+  const isModeratorPath = pathname.startsWith("/moderator");
 
-  if (isAdminPath || isUserPath) {
+  if (isAdminPath || isUserPath || isModeratorPath) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -20,9 +22,13 @@ export async function middleware(request: NextRequest) {
       if (!JWT_SECRET) throw new Error("JWT_SECRET missing");
       const secret = new TextEncoder().encode(JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
-      const userRole = payload.role as "admin" | "user";
+      const userRole = payload.role as UserRole;
 
-      if (isAdminPath && userRole !== "admin") {
+      if (isAdminPath && !canAccessRole(userRole, "admin")) {
+        return NextResponse.redirect(new URL("/user", request.url));
+      }
+
+      if (isModeratorPath && !canAccessRole(userRole, "moderator")) {
         return NextResponse.redirect(new URL("/user", request.url));
       }
 
@@ -40,5 +46,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/user/:path*"],
+  matcher: ["/admin/:path*", "/user/:path*", "/moderator/:path*"],
 };

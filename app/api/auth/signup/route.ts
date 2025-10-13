@@ -4,6 +4,7 @@ import { SignJWT } from "jose";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "@/lib/database";
 import { User } from "@/types/user";
+import { UserRole } from "@/types/roles";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
       fullName,
       email: email.toLowerCase(),
       passwordHash,
-      role: role as "admin" | "user",
+      role: role as UserRole,
     };
 
     const createdUser = await db.createUser(newUser);

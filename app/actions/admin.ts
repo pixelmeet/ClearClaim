@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/database";
 import { GetUsersParams } from "@/types/pagination";
+import { UserRole } from "@/types/roles";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 
@@ -19,7 +20,7 @@ export async function getUsersAction(params: GetUsersParams) {
 export async function createAdminUserAction(data: {
   fullName: string;
   email: string;
-  role: "admin" | "user";
+  role: UserRole;
   password?: string;
 }) {
   const db = await getDb();
@@ -48,7 +49,7 @@ export async function createAdminUserAction(data: {
 
 export async function updateAdminUserAction(
   id: string,
-  data: { fullName: string; role: "admin" | "user" }
+  data: { fullName: string; role: UserRole }
 ) {
   const db = await getDb();
   await db.updateUser(id, data);

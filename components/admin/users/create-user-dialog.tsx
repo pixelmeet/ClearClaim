@@ -29,11 +29,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAdminUserAction } from "@/app/actions/admin";
+import { getAllRoles, getRolesForSelect, UserRole } from "@/types/roles";
 
 const formSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
-  role: z.enum(["user", "admin"]),
+  role: z.enum(getAllRoles() as [UserRole, ...UserRole[]]),
   password: z.string().optional(),
 });
 
@@ -114,8 +115,11 @@ export function CreateUserDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      {getRolesForSelect().map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

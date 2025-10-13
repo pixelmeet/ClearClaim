@@ -25,6 +25,7 @@ import {
 
 import { getCurrentUserAction } from "@/app/actions/auth";
 import { updateUserNameAction, deleteUserAction } from "@/app/actions/user";
+import { canAccessRole, UserRole } from "@/types/roles";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
 
 const formSchema = z.object({
@@ -310,13 +311,22 @@ export default function UserPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {user.role === "admin" ? (
+                {canAccessRole(user.role, "admin") ? (
                   <Link href="/admin">
                     <Button
                       variant="outline"
                       className="w-full justify-start text-base h-12">
                       <Shield className="mr-3 h-5 w-5 text-primary" />
                       Go to Admin Panel
+                    </Button>
+                  </Link>
+                ) : canAccessRole(user.role, "moderator") ? (
+                  <Link href="/moderator">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-base h-12">
+                      <Shield className="mr-3 h-5 w-5 text-primary" />
+                      Go to Moderator Dashboard
                     </Button>
                   </Link>
                 ) : (

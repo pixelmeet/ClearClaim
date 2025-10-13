@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { canAccessRole } from "@/types/roles";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,8 +63,10 @@ export default function LoginPage() {
 
       toast.success("Logged in successfully!");
 
-      if (data.role === "admin") {
+      if (canAccessRole(data.role, "admin")) {
         router.push("/admin");
+      } else if (canAccessRole(data.role, "moderator")) {
+        router.push("/moderator");
       } else {
         router.push("/user");
       }
