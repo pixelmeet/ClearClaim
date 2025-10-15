@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
@@ -118,15 +119,19 @@ export default function Home() {
           <div className="mt-6">
             {imageUrl && (
               <div className="relative flex flex-col items-center">
-                <img
+                <Image
                   src={imageUrl}
                   alt="Generated"
+                  width={1024}
+                  height={1024}
                   className="w-full rounded-2xl shadow-xl border border-gray-200"
                   style={{ maxHeight: 400, objectFit: 'contain' }}
                   onError={() => {
                     setError('Failed to load the generated image');
                     setImageUrl('');
                   }}
+                  unoptimized
+                  priority={false}
                 />
                 <a
                   href={imageUrl}

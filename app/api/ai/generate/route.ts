@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const url = `${baseUrl}/prompt/${encodeURIComponent(builtPrompt)}?width=${width}&height=${height}&model=${encodeURIComponent(model)}`;
 
     return NextResponse.json({ image: url, success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Image generation failed' }, { status: 500 });
   }
 }
