@@ -15,15 +15,15 @@ export const NAVBAR = {
   logo: {
     light: "/images/logo.svg",
     dark: "/images/logo.svg",
-    alt: "Placeholder Logo",
+    alt: "ClearClaim Logo",
     width: 32,
     height: 32,
   },
   name: {
-    primary: "Place",
-    secondary: "Holder",
+    primary: "Clear",
+    secondary: "Claim",
   },
   links: [
-    { href: "/placeholder", label: "Placeholder", icon: LayoutDashboard },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ] as NavLink[],
 } as const;

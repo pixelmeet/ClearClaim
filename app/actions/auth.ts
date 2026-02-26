@@ -1,51 +1,55 @@
-"use server";
+'use server';
 
-import { cookies } from "next/headers";
-import { jwtVerify, JWTPayload } from "jose";
-import { getDb } from "@/lib/database";
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { getSessionUser } from '@/lib/auth/getSessionUser';
+import { logoutUser } from '@/lib/auth';
+import connectToDatabase from '@/lib/db';
+import ApprovalRule from '@/models/ApprovalRule';
 
 export async function getCurrentUserAction() {
-  const db = await getDb();
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    if (!JWT_SECRET) {
-      throw new Error("JWT_SECRET is not defined in environment variables.");
-    }
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload }: { payload: JWTPayload } = await jwtVerify(token, secret);
-    const userId = payload.userId as string;
-
-    if (!userId) return null;
-
-    const user = await db.findUserById(userId);
-
-    if (!user) {
-      cookieStore.delete("auth_token");
-      return null;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash, otp, otpExpires, ...rest } = user;
-    return {
-      ...rest,
-      name: user.fullName,
-    };
-  } catch (error) {
-    console.error("Authentication error in server action:", error);
-    cookieStore.delete("auth_token");
-    return null;
-  }
+  const session = await getSessionUser();
+  if (!session) return null;
+  return {
+    id: session.userId,
+    userId: session.userId,
+    name: session.name,
+    email: session.email,
+    role: session.role,
+    companyId: session.companyId,
+  };
 }
 
 export async function logoutAction() {
-  const cookieStore = await cookies();
-  cookieStore.delete("auth_token");
+  await logoutUser();
+}
+
+export async function deleteApprovalRuleAction(ruleId: string) {
+  const session = await getSessionUser();
+  if (!session) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  if (session.role !== 'ADMIN') {
+    return { success: false, error: 'Unauthorized: Admin access required' };
+  }
+
+  await connectToDatabase();
+
+  const rule = await ApprovalRule.findById(ruleId);
+  if (!rule) {
+    return { success: false, error: 'Rule not found' };
+  }
+
+  if (rule.organization !== session.companyId) {
+    return { success: false, error: 'Unauthorized: Organization mismatch' };
+  }
+
+  await ApprovalRule.findByIdAndDelete(ruleId);
+
+  return {
+    success: true,
+    deletedRule: {
+      id: rule._id?.toString(),
+      ruleName: rule.ruleName,
+    },
+  };
 }

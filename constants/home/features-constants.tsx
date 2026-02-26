@@ -2,14 +2,14 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  CalendarClock,
-  BellRing,
-  LineChart,
-  BarChart,
-  MessageSquareHeart,
-  ShieldCheck,
+  Receipt,
+  Workflow,
+  DollarSign,
   FileText,
+  ShieldCheck,
   Users,
+  Settings,
+  Zap,
 } from "lucide-react";
 
 export type FeatureItem = {
@@ -21,57 +21,57 @@ export type FeatureItem = {
 export const FEATURES_CONTENT = {
   id: "features",
   eyebrow: "Features",
-  title: "A Complete Toolkit for Placeholder",
+  title: "Everything You Need for Expense Management",
   description:
-    "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+    "Streamline your expense reimbursement process with powerful automation, intelligent workflows, and comprehensive tracking.",
   items: [
     {
-      icon: CalendarClock,
-      title: "Placeholder",
+      icon: Receipt,
+      title: "OCR Receipt Scanning",
       description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+        "Automatically extract expense details from receipts using advanced OCR technology, reducing manual data entry.",
     },
     {
-      icon: BellRing,
-      title: "Placeholder",
+      icon: Workflow,
+      title: "Configurable Approval Rules",
       description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+        "Set up custom approval workflows with multi-step and conditional rules based on amount, category, or department.",
     },
     {
-      icon: LineChart,
-      title: "Placeholder",
+      icon: DollarSign,
+      title: "Automatic Currency Conversion",
       description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
-    },
-    {
-      icon: BarChart,
-      title: "Placeholder",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
-    },
-    {
-      icon: MessageSquareHeart,
-      title: "Placeholder",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+        "Convert all expenses to your company's base currency automatically using real-time exchange rates.",
     },
     {
       icon: FileText,
-      title: "Placeholder",
+      title: "Complete Audit Trail",
       description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Placeholder",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+        "Track every action, approval, and change with a comprehensive audit trail for transparency and compliance.",
     },
     {
       icon: Users,
-      title: "Placeholder",
+      title: "Role-Based Access",
       description:
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+        "Employees submit expenses, managers review and approve, and admins oversee the entire process with granular permissions.",
+    },
+    {
+      icon: Settings,
+      title: "Custom Approval Flows",
+      description:
+        "Create approval flows with role-based steps, specific approvers, or hybrid approaches tailored to your organization.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Security & Compliance",
+      description:
+        "Enterprise-grade security with encrypted data, role-based access control, and compliance-ready audit logs.",
+    },
+    {
+      icon: Zap,
+      title: "Fast Processing",
+      description:
+        "Reduce expense processing time from days to hours with automated workflows and intelligent routing.",
     },
   ] as FeatureItem[],
 } as const;

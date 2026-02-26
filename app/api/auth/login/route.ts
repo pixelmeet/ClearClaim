@@ -1,69 +1,58 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { SignJWT } from "jose";
-import { getDb } from "@/lib/database";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase from '@/lib/db';
+import User from '@/models/User';
+import { LoginSchema } from '@/lib/validation';
+import { createSessionCookie } from '@/lib/auth/createSessionCookie';
+import { verifyPassword } from '@/lib/auth/verifyPassword';
+import { UserRole } from '@/lib/types';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const ROLE_REDIRECTS: Record<UserRole, string> = {
+  [UserRole.ADMIN]: '/admin',
+  [UserRole.MANAGER]: '/manager',
+  [UserRole.EMPLOYEE]: '/employee/dashboard',
+};
 
-export async function POST(request: Request) {
-  const db = await getDb();
-
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const body = await req.json();
+    const result = LoginSchema.safeParse(body);
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { message: "Missing email or password" },
-        { status: 400 }
-      );
+    if (!result.success) {
+      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
 
-    const user = await db.findUserByEmail(email);
+    const { email, password } = result.data;
+    const emailLower = email.trim().toLowerCase();
+
+    await connectToDatabase();
+
+    const user = await User.findOne({ email: emailLower });
     if (!user) {
-      return NextResponse.json(
-        { message: "Invalid credentials" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return NextResponse.json(
-        { message: "Invalid credentials" },
-        { status: 401 }
-      );
+    const isValid = await verifyPassword(password, user.passwordHash);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    if (!JWT_SECRET) throw new Error("JWT_SECRET missing");
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const token = await new SignJWT({
-      userId: user.id,
+    await createSessionCookie({
+      userId: user._id.toString(),
+      name: user.name,
       email: user.email,
-      role: user.role,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("1d")
-      .sign(secret);
-
-    const response = NextResponse.json(
-      { message: "Login successful", role: user.role },
-      { status: 200 }
-    );
-    response.cookies.set("auth_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 86400,
-      path: "/",
+      role: user.role as UserRole,
+      companyId: user.companyId.toString(),
     });
 
-    return response;
+    const redirectTo = ROLE_REDIRECTS[user.role as UserRole] ?? '/employee/dashboard';
+
+    return NextResponse.json({
+      success: true,
+      redirectTo,
+      user: { id: user._id, name: user.name, role: user.role },
+    });
   } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    console.error('Login error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

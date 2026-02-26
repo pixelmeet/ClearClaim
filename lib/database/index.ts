@@ -11,7 +11,12 @@ export async function getDb(): Promise<DatabaseAdapter> {
     return cachedDbAdapter;
   }
 
-  const provider = process.env.DATABASE_PROVIDER;
+  let provider = process.env.DATABASE_PROVIDER;
+
+  // Fallback: If no provider is set, but MONGODB_URI is present, default to mongodb.
+  if (!provider && process.env.MONGODB_URI) {
+    provider = 'mongodb';
+  }
 
   switch (provider) {
     case 'supabase':
@@ -24,8 +29,8 @@ export async function getDb(): Promise<DatabaseAdapter> {
       cachedDbAdapter = (await import('./firebase')).FirebaseAdapter;
       break;
     default:
-      throw new Error(`Unsupported database provider: ${provider}. Please set DATABASE_PROVIDER in .env to "supabase", "mongodb", or "firebase".`);
+      throw new Error(`Unsupported or missing database provider: ${provider}. Please set DATABASE_PROVIDER in .env to "supabase", "mongodb", or "firebase", or ensure MONGODB_URI is set.`);
   }
-  
+
   return cachedDbAdapter;
 }

@@ -23,7 +23,7 @@ import {
   deleteUserAction,
   updateUserExtrasAction,
 } from "@/app/actions/user";
-import { UserRole } from "@/types/roles";
+// removed UserRole
 import {
   getProfileUserFields,
   buildUserExtraZodShape,
@@ -65,7 +65,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: string;
   [key: string]: unknown;
 }
 
@@ -263,7 +263,7 @@ export function UserInfoCard({
                             body: JSON.stringify({ publicId }),
                           });
                         }
-                      } catch {}
+                      } catch { }
                       await updateUserExtrasAction({
                         profilePic: "",
                         profilePicId: "",
@@ -349,7 +349,7 @@ export function UserInfoCard({
                       const dependentValue = form.getValues(def.dependsOn as keyof FormData) as string;
                       options = getFieldOptions(def.name, dependentValue);
                     }
-                    
+
                     return (
                       <SelectField
                         key={def.name}
@@ -362,7 +362,7 @@ export function UserInfoCard({
                       />
                     );
                   }
-                  
+
                   // Use field factory for other field types
                   return (
                     <FieldFactory

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, FileText, Loader, X, Copy, Check } from "lucide-react";
+import Image from "next/image";
 import { createWorker, type PSM } from "tesseract.js";
 
 export interface OcrResult {
@@ -17,12 +18,12 @@ export interface OcrResult {
 export interface OcrError {
   message: string;
   code:
-    | "FILE_TOO_LARGE"
-    | "INVALID_FORMAT"
-    | "PROCESSING_ERROR"
-    | "NETWORK_ERROR"
-    | "UNKNOWN";
-  details?: any;
+  | "FILE_TOO_LARGE"
+  | "INVALID_FORMAT"
+  | "PROCESSING_ERROR"
+  | "NETWORK_ERROR"
+  | "UNKNOWN";
+  details?: Record<string, unknown>;
 }
 
 export interface OcrProgress {
@@ -161,30 +162,28 @@ const DefaultUploadArea = ({
 }: {
   config: OcrConfig;
   onFileSelect: () => void;
-  onDragOver: (e: any) => void;
-  onDrop: (e: any) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
   uploadText?: string;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -20 }}
-    className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors duration-300 ${
-      config.variant === "minimal" ? "p-4" : ""
-    }`}
+    className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors duration-300 ${config.variant === "minimal" ? "p-4" : ""
+      }`}
     onDrop={onDrop}
     onDragOver={onDragOver}
     onClick={onFileSelect}>
     <UploadCloud
-      className={`text-gray-400 dark:text-gray-500 mb-4 ${
-        config.size === "sm"
-          ? "w-8 h-8"
-          : config.size === "lg"
+      className={`text-gray-400 dark:text-gray-500 mb-4 ${config.size === "sm"
+        ? "w-8 h-8"
+        : config.size === "lg"
           ? "w-20 h-20"
           : config.size === "xl"
-          ? "w-24 h-24"
-          : "w-16 h-16"
-      }`}
+            ? "w-24 h-24"
+            : "w-16 h-16"
+        }`}
     />
     <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
       {uploadText || "Drag & drop an image here, or click to select"}
@@ -346,8 +345,6 @@ export function OcrComponent({
   uploadText,
   buttonText,
   loadingText,
-  errorText,
-  successText,
 }: OcrComponentProps) {
   const config: OcrConfig = { ...defaultOcrConfig, ...userConfig };
 
@@ -365,6 +362,7 @@ export function OcrComponent({
 
   useEffect(() => {
     resetState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetState = () => {
@@ -445,6 +443,7 @@ export function OcrComponent({
         processFile(file);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [config]
   );
 
@@ -516,7 +515,7 @@ export function OcrComponent({
             ? error.message
             : "Failed to extract text. Please try again with a clearer image.",
         code: "PROCESSING_ERROR",
-        details: error,
+        details: { error },
       };
       setError(ocrError);
       config.onError?.(ocrError);
@@ -554,15 +553,13 @@ export function OcrComponent({
     ${getSizeClasses(config.size)} 
     ${getThemeClasses(config.theme)} 
     rounded-xl shadow-lg 
-    ${
-      config.variant === "minimal"
-        ? "border border-gray-200 dark:border-gray-700"
-        : ""
+    ${config.variant === "minimal"
+      ? "border border-gray-200 dark:border-gray-700"
+      : ""
     }
-    ${
-      config.variant === "card"
-        ? "border-2 border-gray-300 dark:border-gray-600"
-        : ""
+    ${config.variant === "card"
+      ? "border-2 border-gray-300 dark:border-gray-600"
+      : ""
     }
     ${config.variant === "inline" ? "inline-block" : "w-full mx-auto"}
     ${className}
@@ -599,9 +596,11 @@ export function OcrComponent({
             animate={{ opacity: 1, scale: 1 }}
             className="space-y-4">
             <div className="relative">
-              <img
+              <Image
                 src={image}
                 alt="Preview"
+                width={500}
+                height={300}
                 className="w-full h-auto max-h-96 object-contain rounded-lg border border-gray-200 dark:border-gray-700"
               />
               <button
@@ -630,7 +629,7 @@ export function OcrComponent({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}>
                   {progress.status === "recognizing" ||
-                  progress.status === "processing" ? (
+                    progress.status === "processing" ? (
                     <div className="flex items-center">
                       <Loader className="animate-spin mr-2" />
                       {loadingText || progress.message}

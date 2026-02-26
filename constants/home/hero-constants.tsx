@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Users, Calendar, Heart, ShieldCheck } from "lucide-react";
+import { Users, Receipt, Zap, ShieldCheck } from "lucide-react";
 
 export type HeroHighlight = {
   icon: LucideIcon;
@@ -12,20 +12,20 @@ export type HeroHighlight = {
 export const HERO_CONTENT = {
   id: "hero",
   headline: {
-    primary: "Placeholder,",
-    secondary: "Placeholder",
+    primary: "ClearClaim,",
+    secondary: "Expense Reimbursement Made Simple",
   },
   description:
-    "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Temporibus, officiis!",
+    "Automate your expense approval workflows with configurable rules, OCR-powered receipt scanning, and multi-step approvals. Convert expenses to your company's base currency automatically.",
   ctas: {
-    primary: { href: "/placeholder", label: "Placeholder" },
-    secondary: { href: "/placeholder", label: "Placeholder" },
+    primary: { href: "/signup", label: "Get Started" },
+    secondary: { href: "/login", label: "Sign In" },
   },
   highlights: [
-    { icon: Users, title: "50+", description: "Placeholder" },
-    { icon: Calendar, title: "10K+", description: "Placeholder" },
-    { icon: Heart, title: "50%", description: "Placeholder" },
-    { icon: ShieldCheck, title: "100%", description: "Placeholder" },
+    { icon: Zap, title: "Fast", description: "Automated Workflows" },
+    { icon: Receipt, title: "Smart", description: "OCR Receipt Scanning" },
+    { icon: ShieldCheck, title: "Secure", description: "Complete Audit Trail" },
+    { icon: Users, title: "Flexible", description: "Multi-Step Approvals" },
   ] as HeroHighlight[],
 } as const;
 

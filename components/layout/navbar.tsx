@@ -21,13 +21,13 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { NAVBAR } from "@/constants/layout/navbar-constants";
 import { getCurrentUserAction } from "@/app/actions/auth";
-import { canAccessRole, UserRole } from "@/types/roles";
+import { canAccessRole } from "@/types/roles";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: string;
 }
 
 export function Navbar() {
@@ -112,9 +112,8 @@ export function Navbar() {
 
   return (
     <motion.header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-primary shadow-lg" : "bg-transparent"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-primary shadow-lg" : "bg-transparent"
+        }`}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.8 }}>
@@ -158,11 +157,10 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className={`transition-all duration-300 shadow-sm rounded-md border-2 ${
-                      scrolled
-                        ? "border-primary-foreground/20 text-primary dark:text-primary-foreground dark:border-foreground/20 hover:border-foreground hover:bg-secondary"
-                        : "border-primary/20 text-primary hover:border-primary/40 hover:bg-primary/5"
-                    }`}>
+                    className={`transition-all duration-300 shadow-sm rounded-md border-2 ${scrolled
+                      ? "border-primary-foreground/20 text-primary dark:text-primary-foreground dark:border-foreground/20 hover:border-foreground hover:bg-secondary"
+                      : "border-primary/20 text-primary hover:border-primary/40 hover:bg-primary/5"
+                      }`}>
                     <User className="h-4 w-4 mr-2" />
                     {user.name}
                   </Button>
@@ -193,13 +191,13 @@ export function Navbar() {
                   )}
                   {(canAccessRole(user.role, "admin") ||
                     user.email?.endsWith("@admin")) && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin Panel
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin Panel
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
@@ -214,11 +212,10 @@ export function Navbar() {
                 asChild
                 variant="default"
                 className={`transition-all duration-300 shadow-sm rounded-md
-      ${
-        scrolled
-          ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-          : "bg-primary text-primary-foreground hover:bg-chart-2"
-      }`}>
+      ${scrolled
+                    ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    : "bg-primary text-primary-foreground hover:bg-chart-2"
+                  }`}>
                 <Link href="/login">
                   <span className="flex items-center gap-2">
                     <ArrowRight className="h-4 w-4" />
@@ -235,11 +232,10 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`${
-                    scrolled
-                      ? "text-primary-foreground hover:bg-primary-foreground/10"
-                      : "text-foreground hover:bg-foreground/10"
-                  } transition-all`}>
+                  className={`${scrolled
+                    ? "text-primary-foreground hover:bg-primary-foreground/10"
+                    : "text-foreground hover:bg-foreground/10"
+                    } transition-all`}>
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
@@ -306,19 +302,19 @@ export function Navbar() {
                           )}
                           {(canAccessRole(user.role, "admin") ||
                             user.email?.endsWith("@admin")) && (
-                            <Button
-                              asChild
-                              variant="outline"
-                              className="w-full">
-                              <Link
-                                href="/admin"
-                                className="flex items-center justify-center gap-2"
-                                onClick={() => setIsOpen(false)}>
-                                <Shield className="h-4 w-4" />
-                                Admin Panel
-                              </Link>
-                            </Button>
-                          )}
+                              <Button
+                                asChild
+                                variant="outline"
+                                className="w-full">
+                                <Link
+                                  href="/admin"
+                                  className="flex items-center justify-center gap-2"
+                                  onClick={() => setIsOpen(false)}>
+                                  <Shield className="h-4 w-4" />
+                                  Admin Panel
+                                </Link>
+                              </Button>
+                            )}
                           <Button
                             variant="destructive"
                             className="w-full"
@@ -370,11 +366,10 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2 group px-3 py-2 rounded-md transition-all ${
-        isScrolled
-          ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
-          : "text-muted-foreground hover:text-primary hover:bg-foreground/5"
-      }`}>
+      className={`flex items-center gap-2 group px-3 py-2 rounded-md transition-all ${isScrolled
+        ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
+        : "text-muted-foreground hover:text-primary hover:bg-foreground/5"
+        }`}>
       <div className="transition-colors">{icon}</div>
       <span className="text-sm font-medium transition-colors font-sans">
         {label}

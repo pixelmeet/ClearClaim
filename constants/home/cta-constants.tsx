@@ -50,62 +50,62 @@ export interface CTAConfig {
 
 export const ctaConfig: CTAConfig = {
   badge: {
-    text: "Placeholder",
+    text: "Get Started Today",
   },
   heading: {
-    title: "Placeholder",
+    title: "Ready to Streamline Your Expense Management?",
     subtitle:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+      "Join companies that have automated their expense reimbursement process and saved hours of manual work every week.",
   },
   features: [
     {
       icon: CalendarCheck,
-      title: "Placeholder",
-      description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+      title: "Quick Setup",
+      description: "Get started in minutes with our intuitive setup wizard and pre-configured approval flows.",
     },
     {
       icon: HeartPulse,
-      title: "Placeholder",
+      title: "24/7 Support",
       description:
-        "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+        "Our team is here to help you every step of the way with dedicated support and comprehensive documentation.",
     },
   ],
   buttons: [
     {
-      text: "Placeholder",
+      text: "Start Free Trial",
       href: "/signup",
       variant: "primary",
     },
     {
-      text: "Placeholder",
-      href: "/tour",
+      text: "Schedule Demo",
+      href: "/login",
       variant: "secondary",
     },
   ],
   dashboard: {
-    title: "Placeholder",
-    patientName: "Placeholder",
+    title: "Dashboard Preview",
+    patientName: "Your Expenses",
     items: [
       {
         icon: CalendarCheck,
-        title: "Placeholder",
-        time: "Placeholder",
+        title: "Submit Expense",
+        time: "Just now",
         content:
-          "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+          "Upload a receipt and let our OCR automatically extract all the details. Submit with one click.",
       },
       {
         icon: BarChart,
-        title: "Placeholder",
-        time: "Placeholder",
+        title: "Track Status",
+        time: "2 hours ago",
         content:
-          "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+          "Monitor your expense status in real-time as it moves through the approval workflow.",
       },
       {
         icon: Bell,
-        title: "Placeholder",
-        time: "Placeholder",
+        title: "Get Notified",
+        time: "Yesterday",
         content:
-          "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+          "Receive instant notifications when expenses are approved, rejected, or need your attention.",
       },
     ],
   },

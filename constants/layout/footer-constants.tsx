@@ -49,11 +49,11 @@ export interface FooterConfig {
 
 export const footerConfig: FooterConfig = {
   companyName: {
-    primary: "Place",
-    secondary: "Holder",
+    primary: "Clear",
+    secondary: "Claim",
   },
   tagline:
-    "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, quos?",
+    "Automate your expense reimbursement workflows with intelligent approval rules and OCR-powered receipt scanning.",
   socialLinks: [
     {
       href: "https://facebook.com",
@@ -78,12 +78,20 @@ export const footerConfig: FooterConfig = {
   ],
   sections: [
     {
-      title: "Placeholder1",
-      links: [{ href: "/placeholder1", label: "Placeholder1" }],
+      title: "Product",
+      links: [
+        { href: "/dashboard", label: "Dashboard" },
+        { href: "/#features", label: "Features" },
+        { href: "/#faq", label: "FAQ" },
+      ],
     },
     {
-      title: "Placeholder2",
-      links: [{ href: "/placeholder2", label: "Placeholder2" }],
+      title: "Company",
+      links: [
+        { href: "/login", label: "Sign In" },
+        { href: "/signup", label: "Sign Up" },
+        { href: "/#testimonials", label: "Testimonials" },
+      ],
     },
   ],
   contactInfo: {
@@ -92,11 +100,11 @@ export const footerConfig: FooterConfig = {
       line2: "Surat, Gujarat, India",
       line3: "",
     },
-    email: "contact@placeholder.com",
+    email: "contact@clearclaim.com",
     phone: "+91 12345 67890",
   },
   legal: {
-    copyrightText: "Placeholder. All rights reserved.",
+    copyrightText: "ClearClaim. All rights reserved.",
     links: [],
   },
 };

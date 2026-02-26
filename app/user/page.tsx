@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { getCurrentUserAction } from "@/app/actions/auth";
-import { canAccessRole, UserRole } from "@/types/roles";
+import { canAccessRole } from "@/types/roles";
 import { UserInfoCard } from "@/components/user";
 
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: string;
   [key: string]: unknown;
 }
 
@@ -114,8 +114,8 @@ export default function UserPage() {
           initial="hidden"
           animate="visible">
           {/* Left Side: User Profile */}
-          <UserInfoCard 
-            user={user} 
+          <UserInfoCard
+            user={user}
             onUserUpdate={handleUserUpdate}
             variants={cardVariants}
           />

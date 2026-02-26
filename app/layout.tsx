@@ -1,30 +1,36 @@
 import type { Metadata } from "next";
-import { Oxanium, Merriweather, Fira_Code } from "next/font/google";
+import { Outfit, JetBrains_Mono, Fraunces } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Template",
-  description: "Template",
+  title: "ClearClaim - Expense Management",
+  description: "Modern expense management and approval system",
   icons: {
     icon: "/images/logo.svg",
   },
 };
 
-const sans = Oxanium({
+// Distinctive heading font - Outfit as alternative to Satoshi/Clash Display
+const sans = Outfit({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
-const serif = Merriweather({
+// Serif for emphasis - Fraunces is distinctive and variable
+const serif = Fraunces({
   subsets: ["latin"],
   variable: "--font-serif",
+  display: "swap",
 });
 
-const mono = Fira_Code({
+// Developer-friendly monospace
+const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
 });
 
 export default function RootLayout({

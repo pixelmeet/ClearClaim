@@ -1,44 +1,51 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
-import { UserRole, canAccessRole } from "@/types/roles";
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { verifyToken } from '@/lib/auth';
+import { UserRole } from '@/lib/types';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("auth_token")?.value;
 
-  const isAdminPath = pathname.startsWith("/admin");
-  const isUserPath = pathname.startsWith("/user");
-  const isModeratorPath = pathname.startsWith("/moderator");
+  // Public paths
+  const publicPaths = ['/login', '/signup', '/api/auth/login', '/api/auth/signup'];
+  if (publicPaths.some(path => pathname.startsWith(path))) {
+    return NextResponse.next();
+  }
 
-  if (isAdminPath || isUserPath || isModeratorPath) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
+  // Check auth
+  const token = request.cookies.get('auth_token')?.value;
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  const payload = await verifyToken(token);
+  if (!payload) {
+    // Invalid token
+    const response = NextResponse.redirect(new URL('/login', request.url));
+    response.cookies.delete('auth_token');
+    return response;
+  }
+
+  // Role Access Control - redirect to role-appropriate dashboard
+  if (pathname.startsWith('/admin')) {
+    if (payload.role !== UserRole.ADMIN) {
+      const redirect =
+        payload.role === UserRole.MANAGER ? '/manager' : '/employee/dashboard';
+      return NextResponse.redirect(new URL(redirect, request.url));
     }
+  }
 
-    try {
-      if (!JWT_SECRET) throw new Error("JWT_SECRET missing");
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret);
-      const userRole = payload.role as UserRole;
+  if (pathname.startsWith('/manager')) {
+    if (payload.role !== UserRole.MANAGER && payload.role !== UserRole.ADMIN) {
+      return NextResponse.redirect(new URL('/employee/dashboard', request.url));
+    }
+  }
 
-      if (isAdminPath && !canAccessRole(userRole, "admin")) {
-        return NextResponse.redirect(new URL("/user", request.url));
-      }
-
-      if (isModeratorPath && !canAccessRole(userRole, "moderator")) {
-        return NextResponse.redirect(new URL("/user", request.url));
-      }
-
-      return NextResponse.next();
-    } catch (err) {
-      console.error("Middleware JWT Error:", err);
-
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("auth_token");
-      return response;
+  if (pathname.startsWith('/employee')) {
+    if (payload.role !== UserRole.EMPLOYEE && payload.role !== UserRole.ADMIN) {
+      const redirect =
+        payload.role === UserRole.MANAGER ? '/manager' : '/employee/dashboard';
+      return NextResponse.redirect(new URL(redirect, request.url));
     }
   }
 
@@ -46,5 +53,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/user/:path*", "/moderator/:path*"],
+  matcher: [
+    '/admin/:path*',
+    '/manager/:path*',
+    '/employee/:path*',
+    '/dashboard/:path*',
+    '/',
+  ],
 };

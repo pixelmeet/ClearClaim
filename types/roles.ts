@@ -19,6 +19,18 @@ export const ROLE_DEFINITIONS = {
   },
 } as const;
 
+/**
+ * Maps expense management system roles (ADMIN, MANAGER, EMPLOYEE) 
+ * to auth system roles (admin, moderator, user)
+ */
+function mapExpenseRoleToAuthRole(role: string): UserRole | null {
+  const roleUpper = role.toUpperCase();
+  if (roleUpper === 'ADMIN') return 'admin';
+  if (roleUpper === 'MANAGER') return 'moderator';
+  if (roleUpper === 'EMPLOYEE') return 'user';
+  return null;
+}
+
 export type UserRole = keyof typeof ROLE_DEFINITIONS;
 
 export const USER_ROLES = Object.keys(ROLE_DEFINITIONS).reduce((acc, role) => {
@@ -42,11 +54,32 @@ export function hasRoleAccess(
 }
 
 export function canAccessRole(
-  userRole: UserRole,
+  userRole: UserRole | string | undefined | null,
   targetRole: string
 ): boolean {
-  const userConfig = ROLE_DEFINITIONS[userRole];
-  return (userConfig.canAccess as readonly string[]).includes(targetRole);
+  // Guard against invalid/undefined roles
+  if (!userRole || typeof userRole !== 'string') {
+    return false;
+  }
+  
+  // Normalize to lowercase for comparison
+  const normalizedRole = userRole.toLowerCase();
+  
+  // Check if it's already a valid auth role
+  if (normalizedRole in ROLE_DEFINITIONS) {
+    const userConfig = ROLE_DEFINITIONS[normalizedRole as UserRole];
+    return (userConfig.canAccess as readonly string[]).includes(targetRole);
+  }
+  
+  // Try to map expense management roles (ADMIN, MANAGER, EMPLOYEE) to auth roles
+  const mappedRole = mapExpenseRoleToAuthRole(userRole);
+  if (mappedRole && mappedRole in ROLE_DEFINITIONS) {
+    const userConfig = ROLE_DEFINITIONS[mappedRole];
+    return (userConfig.canAccess as readonly string[]).includes(targetRole);
+  }
+  
+  // Role not found in either system
+  return false;
 }
 
 export function canAccessAdmin(userRole: UserRole): boolean {
