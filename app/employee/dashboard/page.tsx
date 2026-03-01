@@ -1,53 +1,85 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, PlusCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, PlusCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EmployeeDashboardPage() {
   const router = useRouter();
 
-  return (
-    <main className="min-h-screen bg-secondary p-4 sm:p-6 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold font-serif">My Dashboard</h1>
-        </div>
+  const cards = [
+    {
+      title: 'My Expenses',
+      description: 'View and manage your submitted expenses.',
+      href: '/dashboard/expenses',
+      icon: FileText,
+      gradient: 'from-primary to-primary/70',
+      hoverGradient: 'from-primary/10 to-accent/10',
+    },
+    {
+      title: 'New Expense',
+      description: 'Submit a new expense for approval.',
+      href: '/dashboard/expenses/new',
+      icon: PlusCircle,
+      gradient: 'from-accent to-amber-600',
+      hoverGradient: 'from-accent/10 to-amber-500/10',
+    },
+  ];
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Link href="/dashboard/expenses">
-            <Card className="hover:bg-accent hover:border-primary transition-colors h-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">My Expenses</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  View and manage your submitted expenses.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/dashboard/expenses/new">
-            <Card className="hover:bg-accent hover:border-primary transition-colors h-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Expense</CardTitle>
-                <PlusCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Submit a new expense for approval.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+  return (
+    <div className="space-y-8 p-4 sm:p-6 md:p-8">
+      {/* Header */}
+      <div className="opacity-0 animate-fade-in-up">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          My Dashboard
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Manage your expenses and submit new claims.
+        </p>
       </div>
-    </main>
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((card, index) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className={`block group opacity-0 animate-fade-in-up delay-${(index + 1) * 100}`}
+          >
+            <div className="relative overflow-hidden rounded-2xl border border-card-border bg-card/60 backdrop-blur-xl p-6 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 h-full">
+              {/* Gradient hover background */}
+              <div className={`absolute inset-0 bg-gradient-to-r ${card.hoverGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+
+              <div className="relative z-10">
+                {/* Icon */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${card.gradient} shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                    <card.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+                </div>
+
+                {/* Content */}
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors duration-300">
+                  {card.title}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1.5">
+                  {card.description}
+                </p>
+              </div>
+
+              {/* Decorative corner accent */}
+              <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 blur-2xl group-hover:opacity-20 transition-opacity duration-300`} />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Floating background orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 left-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+      </div>
+    </div>
   );
 }

@@ -32,6 +32,17 @@
   }
 }
 
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* Loading States */
 @keyframes shimmer {
   0% {
@@ -48,6 +59,15 @@
   }
   50% {
     box-shadow: 0 0 20px rgba(10, 95, 89, 0.6), 0 0 30px rgba(10, 95, 89, 0.3);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -72,6 +92,37 @@
   }
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(10, 95, 89, 0.2);
+  }
+  50% {
+    border-color: rgba(10, 95, 89, 0.5);
+  }
+}
+
 /* Utility Classes */
 .animate-fade-in-up {
   animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -83,6 +134,10 @@
 
 .animate-slide-in-right {
   animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-scale-in {
@@ -104,8 +159,24 @@
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-count-up {
+  animation: countUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
 }
 
 /* Stagger Delays */
@@ -117,6 +188,8 @@
 .delay-600 { animation-delay: 600ms; }
 .delay-700 { animation-delay: 700ms; }
 .delay-800 { animation-delay: 800ms; }
+.delay-900 { animation-delay: 900ms; }
+.delay-1000 { animation-delay: 1000ms; }
 
 /* Initial States */
 .opacity-0 { opacity: 0; }
