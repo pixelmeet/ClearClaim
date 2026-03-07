@@ -7,6 +7,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public paths
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
+
   const publicPaths = ['/login', '/signup', '/api/auth/login', '/api/auth/signup'];
   if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();

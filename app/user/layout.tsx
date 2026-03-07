@@ -34,9 +34,9 @@ export default async function UserLayout({
             </div>
 
             {/* Main Content Area */}
-            <div className="flex flex-1 flex-col overflow-hidden relative">
+            <div className="flex flex-1 flex-col overflow-y-auto relative">
                 {/* Premium Topbar  */}
-                <header className="flex h-16 items-center justify-between border-b border-border/40 bg-background/60 backdrop-blur-xl px-4 md:px-6 z-10 shrink-0 sticky top-0">
+                <header className="flex h-16 items-center justify-between px-4 md:px-6 z-10 shrink-0">
                     {/* Left: Mobile Nav & Welcome */}
                     <div className="flex items-center gap-2">
                         <MobileDashboardNav userRole={session.role} />
@@ -87,7 +87,7 @@ export default async function UserLayout({
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-auto bg-transparent relative z-0">
+                <main className="flex-1 bg-transparent relative z-0">
                     {children}
                 </main>
             </div>
