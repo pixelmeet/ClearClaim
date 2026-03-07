@@ -85,7 +85,7 @@ export function Navbar() {
       if (response.ok) {
         setUser(null);
 
-        const protectedPaths = ["/admin", "/user", "/moderator", "/dashboard"];
+        const protectedPaths = ["/admin", "/user", "/dashboard"];
         const isonProtectedPage = protectedPaths.some((path) =>
           pathname.startsWith(path)
         );
@@ -175,17 +175,11 @@ export function Navbar() {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/user" className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      User Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  {canAccessRole(user.role, "moderator") && user.role !== "admin" && (
+                  {pathname !== "/" && (
                     <DropdownMenuItem asChild>
-                      <Link href="/moderator" className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Moderator Dashboard
+                      <Link href="/user" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        Profile
                       </Link>
                     </DropdownMenuItem>
                   )}
@@ -277,26 +271,14 @@ export function Navbar() {
                               {user.email}
                             </p>
                           </div>
-                          <Button asChild variant="outline" className="w-full">
-                            <Link
-                              href="/user"
-                              className="flex items-center justify-center gap-2"
-                              onClick={() => setIsOpen(false)}>
-                              <Settings className="h-4 w-4" />
-                              User Dashboard
-                            </Link>
-                          </Button>
-                          {canAccessRole(user.role, "moderator") && user.role !== "admin" && (
-                            <Button
-                              asChild
-                              variant="outline"
-                              className="w-full">
+                          {pathname !== "/" && (
+                            <Button asChild variant="outline" className="w-full">
                               <Link
-                                href="/moderator"
+                                href="/user"
                                 className="flex items-center justify-center gap-2"
                                 onClick={() => setIsOpen(false)}>
-                                <Shield className="h-4 w-4" />
-                                Moderator Dashboard
+                                <User className="h-4 w-4" />
+                                Profile
                               </Link>
                             </Button>
                           )}

@@ -1,0 +1,77 @@
+﻿
+> template@1.0.0 build
+> next build
+
+   Γû▓ Next.js 15.5.2
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 3.8s
+   Linting and checking validity of types ...
+
+./app/dashboard/expenses/new/page.tsx
+223:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/manager/approvals/page.tsx
+18:40  Warning: 'FileText' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/manager/page.tsx
+4:47  Warning: 'TrendingUp' is defined but never used.  @typescript-eslint/no-unused-vars
+4:59  Warning: 'Clock' is defined but never used.  @typescript-eslint/no-unused-vars
+8:9  Warning: 'router' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./components/admin/AdminSidebar.tsx
+97:43  Warning: 'currentIndex' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./components/admin/UserFormModal.tsx
+3:21  Warning: 'useMemo' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/DashboardSidebar.tsx
+14:5  Warning: 'Settings' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+node.exe : Failed to 
+compile.
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Fai  
+  led to compile.:String   
+ ) [], RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+
+./scripts/seed.ts:1:25
+Type error: Cannot find 
+module 'dotenv' or its 
+corresponding type 
+declarations.
+
+[0m[31m[1m>[22m[39m[9
+0m 1 |[39m 
+[36mimport[39m 
+[33m*[39m [36mas[39m 
+dotenv [36mfrom[39m [32m
+'dotenv'[39m[33m;[39m
+ [90m   |[39m            
+             
+[31m[1m^[22m[39m
+ [90m 2 |[39m 
+dotenv[33m.[39mconfig({ 
+path[33m:[39m 
+[32m'.env.local'[39m 
+})[33m;[39m
+ [90m 3 |[39m
+ [90m 4 |[39m 
+[36mimport[39m mongoose 
+[36mfrom[39m [32m'mongoo
+se'[39m[33m;[39m[0m
+Next.js build worker 
+exited with code: 1 and 
+signal: null

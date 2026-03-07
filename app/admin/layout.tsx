@@ -1,10 +1,11 @@
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { MobileAdminNav } from '@/components/admin/MobileAdminNav';
 import { UserRole } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { LogOut, User as UserIcon, Bell, Search } from 'lucide-react';
+import { LogOut, User as UserIcon, Bell } from 'lucide-react';
 
 export default async function AdminLayout({
     children,
@@ -17,7 +18,6 @@ export default async function AdminLayout({
         redirect('/login');
     }
 
-    // Get initials for avatar
     const initials = session.name
         ? session.name
             .split(' ')
@@ -28,77 +28,67 @@ export default async function AdminLayout({
         : 'AD';
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background text-foreground">
-            {/* Sidebar (Left) */}
-            <AdminSidebar />
+        <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
+            {/* Sidebar Desktop */}
+            <div className="hidden md:flex">
+                <AdminSidebar />
+            </div>
 
-            {/* Main Content Area (Right) */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-                {/* Premium Topbar */}
-                <header
-                    className="flex h-16 items-center justify-between border-b px-6 relative"
-                    style={{
-                        background: 'rgba(var(--card-rgb, 255, 255, 255), 0.6)',
-                        backdropFilter: 'blur(12px)',
-                        WebkitBackdropFilter: 'blur(12px)',
-                    }}
-                >
-                    {/* Left: Welcome */}
-                    <div className="flex items-center gap-3">
-                        <div className="font-semibold text-lg">
-                            Welcome back,{' '}
-                            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            {/* Main Content Area */}
+            <div className="flex flex-1 flex-col overflow-hidden relative">
+                {/* Premium Topbar  */}
+                <header className="flex h-16 items-center justify-between border-b border-border/40 bg-background/60 backdrop-blur-xl px-4 md:px-6 z-10 shrink-0 sticky top-0">
+                    {/* Left: Mobile Nav & Welcome */}
+                    <div className="flex items-center gap-2">
+                        <MobileAdminNav />
+                        <div className="hidden sm:flex text-sm font-medium items-center gap-2 text-muted-foreground mr-4">
+                            <span>System</span>
+                            <span className="text-border">/</span>
+                            <span className="text-foreground tracking-tight px-2 py-1 bg-primary/10 text-primary rounded-md font-semibold">
                                 {session.name}
                             </span>
                         </div>
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-3">
-                        {/* Notification Bell */}
+                    <div className="flex items-center gap-2 md:gap-4">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="relative rounded-full h-9 w-9 hover:bg-primary/5"
+                            className="relative rounded-full h-9 w-9 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
                         >
-                            <Bell className="h-4 w-4 text-muted-foreground" />
-                            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent animate-glow-pulse" />
+                            <Bell className="h-4 w-4" />
+                            <span className="absolute top-2 right-2.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background animate-pulse" />
                         </Button>
 
-                        {/* Divider */}
-                        <div className="h-8 w-px bg-border" />
+                        <div className="h-6 w-px bg-border/50 hidden sm:block mx-1" />
 
-                        {/* User info */}
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-full border border-border/50">
-                                <UserIcon className="h-3.5 w-3.5" />
+                            <div className="hidden md:flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full border border-border/40 hover:bg-muted/60 transition-colors">
+                                <UserIcon className="h-3.5 w-3.5 text-primary" />
                                 <span className="max-w-[150px] truncate">{session.email}</span>
                             </div>
 
-                            {/* Avatar */}
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-xs font-bold shadow-sm">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground text-xs font-bold shadow-sm ring-2 ring-background">
                                 {initials}
                             </div>
                         </div>
 
-                        {/* Logout */}
-                        <Link href="/api/auth/logout" prefetch={false}>
+                        <Link href="/api/auth/logout" prefetch={false} className="hidden sm:block ml-1">
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="rounded-full h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                className="rounded-full h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                title="Log out"
                             >
                                 <LogOut className="h-4 w-4" />
                             </Button>
                         </Link>
                     </div>
-
-                    {/* Subtle bottom gradient accent */}
-                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-auto bg-muted/30">
+                <main className="flex-1 overflow-auto bg-transparent relative z-0">
                     {children}
                 </main>
             </div>

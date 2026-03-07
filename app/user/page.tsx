@@ -6,7 +6,6 @@ import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import {
   LogIn,
-  ArrowLeft,
   LayoutDashboard,
   Moon,
   Sun,
@@ -95,96 +94,25 @@ export default function UserPage() {
   };
 
   return (
-    <main className="min-h-screen bg-secondary p-4 sm:p-6 md:p-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-4 flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </div>
+    <main className="min-h-[calc(100vh-4rem)] p-4 sm:p-6 md:p-8 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/20 blur-[120px]" />
+      </div>
+
+      <div className="mx-auto max-w-5xl relative z-10">
 
         <motion.div
-          className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8"
+          className="max-w-3xl mx-auto"
           variants={cardVariants}
           initial="hidden"
           animate="visible">
-          {/* Left Side: User Profile */}
           <UserInfoCard
             user={user}
             onUserUpdate={handleUserUpdate}
             variants={cardVariants}
           />
-
-          {/* Right Side: Links & Settings */}
-          <motion.div
-            variants={cardVariants}
-            className="flex flex-col justify-between gap-6 lg:gap-8">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-serif">
-                  Quick Links
-                </CardTitle>
-                <CardDescription>
-                  Navigate to other parts of the application.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {canAccessRole(user.role, "admin") ? (
-                  <Link href="/admin">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-base h-12">
-                      <LayoutDashboard className="mr-3 h-5 w-5 text-primary" />
-                      Go to Admin Panel
-                    </Button>
-                  </Link>
-                ) : canAccessRole(user.role, "moderator") ? (
-                  <Link href="/moderator">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-base h-12">
-                      <LayoutDashboard className="mr-3 h-5 w-5 text-primary" />
-                      Go to Moderator Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/user">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-base h-12">
-                      <LayoutDashboard className="mr-3 h-5 w-5 text-primary" />
-                      Go to User Dashboard
-                    </Button>
-                  </Link>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="font-serif">Appearance</CardTitle>
-                <CardDescription>
-                  Customize the look and feel of the app.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <span className="font-medium">Toggle Theme</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
         </motion.div>
       </div>
     </main>

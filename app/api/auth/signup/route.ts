@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      redirectTo: '/employee/dashboard',
+      redirectTo: '/dashboard',
       user: { id: user._id.toString(), name: user.name, role: user.role },
     });
   } catch (error) {

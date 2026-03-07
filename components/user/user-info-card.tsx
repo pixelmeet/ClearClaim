@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 import {
   User as UserIcon,
   Mail,
@@ -16,6 +17,8 @@ import {
   LogOut,
   Trash2,
   Save,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 import {
@@ -96,6 +99,7 @@ export function UserInfoCard({
   variants,
 }: UserInfoCardProps) {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
@@ -217,77 +221,86 @@ export function UserInfoCard({
   }
 
   return (
-    <motion.div variants={variants}>
-      <Card className="h-full shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-serif">My Profile</CardTitle>
-          <CardDescription>
+    <motion.div variants={variants} className="h-full">
+      <Card className="h-full relative overflow-hidden rounded-2xl border border-card-border bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl hover:border-primary/20 transition-all duration-300">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-50 pointer-events-none" />
+        <CardHeader className="relative z-10 border-b border-border/10 pb-6">
+          <CardTitle className="text-3xl font-serif tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">My Profile</CardTitle>
+          <CardDescription className="text-base mt-1.5">
             View and manage your personal information.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8 relative z-10 pt-6">
           <div className="space-y-4 text-sm">
             {/* Prominent profile picture at top (only if a file field is enabled in schema) */}
             {getProfileUserFields().some((f) => f.ui === "file") && (
               <div className="w-full flex flex-col items-center justify-center gap-3">
                 {(() => {
-                  const pic = (user as Record<string, unknown>)[
-                    "profilePic"
-                  ] as string | undefined;
+                  const formPic = form.watch("profilePic" as any) as string | undefined;
+                  const pic = formPic || (user as Record<string, unknown>)["profilePic"] as string | undefined;
                   const imgSrc = pic && pic.length ? pic : "/images/user.png";
                   return (
-                    <Image
-                      src={imgSrc}
-                      alt="Profile"
-                      width={144}
-                      height={144}
-                      className="h-28 w-28 sm:h-36 sm:w-36 rounded-full object-cover border"
-                    />
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                      <Image
+                        src={imgSrc}
+                        alt="Profile"
+                        width={144}
+                        height={144}
+                        className="relative h-28 w-28 sm:h-36 sm:w-36 rounded-full object-cover border-2 border-background shadow-xl"
+                      />
+                    </div>
                   );
                 })()}
-                {(user as Record<string, unknown>)["profilePic"] ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        const publicId = (user as Record<string, unknown>)[
-                          "profilePicId"
-                        ] as string | undefined;
-                        if (publicId) {
-                          await fetch("/api/files/delete", {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({ publicId }),
-                          });
-                        }
-                      } catch { }
-                      await updateUserExtrasAction({
-                        profilePic: "",
-                        profilePicId: "",
-                      });
-                      onUserUpdate({
-                        ...user,
-                        profilePic: "",
-                        profilePicId: "",
-                      } as User);
-                      setProfilePicPreview(null);
-                    }}>
-                    Remove Photo
-                  </Button>
-                ) : null}
+                {(() => {
+                  const currentPic = (form.watch("profilePic" as any) as string | undefined) || (user as Record<string, unknown>)["profilePic"];
+                  return currentPic ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const publicId = form.getValues("profilePicId" as any) || (user as Record<string, unknown>)[
+                            "profilePicId"
+                          ] as string | undefined;
+                          if (publicId) {
+                            await fetch("/api/files/delete", {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({ publicId }),
+                            });
+                          }
+                        } catch { }
+                        form.setValue("profilePic" as any, "");
+                        form.setValue("profilePicId" as any, "");
+                        await updateUserExtrasAction({
+                          profilePic: "",
+                          profilePicId: "",
+                        });
+                        onUserUpdate({
+                          ...user,
+                          profilePic: "",
+                          profilePicId: "",
+                        } as User);
+                      }}>
+                      Remove Photo
+                    </Button>
+                  ) : null;
+                })()}
               </div>
             )}
 
-            <div className="flex items-center gap-4">
-              <Mail className="h-5 w-5 text-muted-foreground" />
-              <span className="font-medium">{user.email}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Shield className="h-5 w-5 text-muted-foreground" />
-              <span className="font-medium capitalize">{user.role}</span>
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 bg-muted/30 p-4 rounded-xl border border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg"><Mail className="h-5 w-5 text-primary" /></div>
+                <div className="flex flex-col"><span className="text-sm text-muted-foreground leading-tight">Email</span><span className="font-medium">{user.email}</span></div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-lg"><Shield className="h-5 w-5 text-accent" /></div>
+                <div className="flex flex-col"><span className="text-sm text-muted-foreground leading-tight">Role</span><span className="font-medium capitalize">{user.role}</span></div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -396,11 +409,11 @@ export function UserInfoCard({
                 })}
 
               {/* Save Button */}
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-4 border-t border-border/10 mt-6 pt-6">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="min-w-[120px]">
+                  className="min-w-[140px] rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all duration-300">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -417,40 +430,62 @@ export function UserInfoCard({
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col items-start gap-4 border-t bg-muted/50 p-6">
-          <h3 className="font-semibold text-foreground">Account Actions</h3>
-          <div className="flex w-full flex-wrap items-center justify-between gap-2">
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" /> Logout
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete Account
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your account.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDeleteAccount}
-                    disabled={isSubmitting}
-                    className="bg-destructive hover:bg-destructive/90">
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Yes, delete my account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+        <CardFooter className="flex flex-col items-start gap-6 border-t border-border/10 bg-muted/20 backdrop-blur-md p-6 relative z-10 w-full">
+          <div className="w-full flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-foreground text-lg tracking-tight">Appearance</h3>
+                <p className="text-sm text-muted-foreground mt-1">Customize the look and feel.</p>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 text-amber-500" />
+                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 text-blue-400" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className="w-full h-px bg-border/50" />
+
+          <div className="w-full flex flex-col gap-4">
+            <h3 className="font-semibold text-foreground text-lg tracking-tight">Account Actions</h3>
+            <div className="flex w-full flex-wrap items-center justify-between gap-4">
+              <Button variant="outline" onClick={handleLogout} className="rounded-xl hover:bg-muted/50 transition-colors">
+                <LogOut className="mr-2 h-4 w-4" /> Logout
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="rounded-xl shadow-sm hover:shadow-md transition-all">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Account
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete
+                      your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAccount}
+                      disabled={isSubmitting}
+                      className="bg-destructive hover:bg-destructive/90">
+                      {isSubmitting && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Yes, delete my account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </CardFooter>
       </Card>

@@ -8,8 +8,8 @@ import { UserRole } from '@/lib/types';
 
 const ROLE_REDIRECTS: Record<UserRole, string> = {
   [UserRole.ADMIN]: '/admin',
-  [UserRole.MANAGER]: '/manager',
-  [UserRole.EMPLOYEE]: '/employee/dashboard',
+  [UserRole.MANAGER]: '/dashboard',
+  [UserRole.EMPLOYEE]: '/dashboard',
 };
 
 export async function POST(req: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       companyId: user.companyId.toString(),
     });
 
-    const redirectTo = ROLE_REDIRECTS[user.role as UserRole] ?? '/employee/dashboard';
+    const redirectTo = ROLE_REDIRECTS[user.role as UserRole] ?? '/dashboard';
 
     return NextResponse.json({
       success: true,

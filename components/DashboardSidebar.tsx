@@ -11,15 +11,17 @@ import {
     FileText,
     CheckCircle,
     Users,
-    Settings,
-    LogOut,
     FolderOpen,
     ChevronRight,
     Zap,
+    LogOut,
+    User,
 } from 'lucide-react';
 
 interface SidebarProps {
     userRole?: UserRole;
+    className?: string;
+    onNavigate?: () => void;
 }
 
 const navSections = [
@@ -30,11 +32,15 @@ const navSections = [
                 label: 'Dashboard',
                 hrefFn: (role?: UserRole) => {
                     if (role === UserRole.ADMIN) return '/admin';
-                    if (role === UserRole.MANAGER) return '/manager';
-                    if (role === UserRole.EMPLOYEE) return '/employee/dashboard';
                     return '/dashboard';
                 },
                 icon: LayoutDashboard,
+                roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYEE],
+            },
+            {
+                label: 'Profile',
+                hrefFn: () => '/user',
+                icon: User,
                 roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.EMPLOYEE],
             },
         ],
@@ -81,7 +87,7 @@ const navSections = [
     },
 ];
 
-export function DashboardSidebar({ userRole }: SidebarProps) {
+export function DashboardSidebar({ userRole, className, onNavigate }: SidebarProps) {
     const pathname = usePathname();
 
     const handleLogout = async () => {
@@ -92,32 +98,23 @@ export function DashboardSidebar({ userRole }: SidebarProps) {
     let animIndex = 0;
 
     return (
-        <div className="w-64 h-full flex flex-col relative">
-            {/* Glassmorphic background */}
-            <div className="absolute inset-0 border-r border-sidebar-border"
-                style={{
-                    background: 'linear-gradient(180deg, var(--sidebar) 0%, rgba(255,255,255,0.4) 100%)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)'
-                }}
-            />
-
-            {/* Gradient accent border */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-accent to-primary opacity-60" />
+        <div className={cn("w-64 h-full flex flex-col relative bg-card/40 backdrop-blur-3xl border-r border-border/50 shadow-sm", className)}>
+            {/* Soft Sidebar subtle gradient highlight */}
+            <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/20 to-transparent" />
 
             {/* Content */}
             <div className="relative z-10 flex flex-col h-full">
-                {/* Logo area with animated gradient */}
-                <div className="p-6 pb-4 opacity-0 animate-fade-in">
+                {/* Logo / Brand */}
+                <div className="p-6 pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent shadow-md">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-md shadow-primary/20">
                             <Zap className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent leading-tight">
+                            <h1 className="text-xl font-display font-bold text-foreground leading-tight tracking-tight">
                                 ClearClaim
                             </h1>
-                            <p className="text-[10px] text-muted-foreground font-mono tracking-wider uppercase">
+                            <p className="text-[10px] text-muted-foreground font-medium tracking-widest uppercase">
                                 Expense Management
                             </p>
                         </div>
@@ -125,10 +122,10 @@ export function DashboardSidebar({ userRole }: SidebarProps) {
                 </div>
 
                 {/* Divider */}
-                <div className="mx-4 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+                <div className="mx-6 h-px bg-border/40" />
 
-                {/* Navigation with sections */}
-                <nav className="flex-1 px-3 pt-4 space-y-5 overflow-y-auto">
+                {/* Navigation sections */}
+                <nav className="flex-1 px-4 pt-6 space-y-6 overflow-y-auto">
                     {navSections.map((section) => {
                         const visibleItems = section.items.filter(
                             (item) => !userRole || item.roles.includes(userRole)
@@ -137,32 +134,31 @@ export function DashboardSidebar({ userRole }: SidebarProps) {
 
                         return (
                             <div key={section.label}>
-                                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                                <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                                     {section.label}
                                 </p>
                                 <div className="space-y-1">
                                     {visibleItems.map((link) => {
                                         const href = link.hrefFn(userRole);
-                                        const isActive = pathname === href;
+                                        const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard' && href !== '/admin');
                                         const currentIndex = animIndex++;
                                         return (
-                                            <Link key={href} href={href}>
+                                            <Link key={href} href={href} onClick={onNavigate}>
                                                 <Button
                                                     variant="ghost"
                                                     className={cn(
-                                                        'w-full justify-start relative group opacity-0 animate-slide-in-right h-10 rounded-lg',
-                                                        `delay-${(currentIndex + 1) * 100}`,
+                                                        'w-full justify-start relative group rounded-xl h-10 transition-all duration-300',
                                                         isActive
-                                                            ? 'bg-primary/10 text-primary font-semibold shadow-sm'
-                                                            : 'hover:bg-primary/5 hover:text-primary font-normal'
+                                                            ? 'bg-primary/10 text-primary font-medium hover:bg-primary/15'
+                                                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                                                     )}
                                                 >
-                                                    {/* Active indicator */}
+                                                    {/* Active Accent Bar */}
                                                     {isActive && (
-                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-gradient-to-b from-primary to-accent rounded-r-full animate-scale-in" />
+                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-lg bg-primary" />
                                                     )}
 
-                                                    {/* Icon with hover animation */}
+                                                    {/* Icon */}
                                                     <link.icon className={cn(
                                                         'mr-3 h-4 w-4 transition-all duration-300 shrink-0',
                                                         isActive
@@ -174,12 +170,8 @@ export function DashboardSidebar({ userRole }: SidebarProps) {
 
                                                     {/* Active arrow */}
                                                     {isActive && (
-                                                        <ChevronRight className="h-3.5 w-3.5 text-primary/50 animate-fade-in" />
+                                                        <ChevronRight className="h-4 w-4 text-primary/70" />
                                                     )}
-
-                                                    {/* Hover glow effect */}
-                                                    <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 
-                                                                  bg-gradient-to-r from-primary/5 to-accent/5 transition-opacity duration-300 -z-10" />
                                                 </Button>
                                             </Link>
                                         );
@@ -191,29 +183,31 @@ export function DashboardSidebar({ userRole }: SidebarProps) {
                 </nav>
 
                 {/* Bottom section */}
-                <div className="p-3 space-y-2">
-                    <div className="h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+                <div className="p-4 space-y-3 mt-auto">
+                    {/* Divider */}
+                    <div className="h-px bg-border/40 mx-2" />
 
                     {/* Role badge */}
-                    <div className="px-3 py-2 opacity-0 animate-fade-in delay-700">
-                        <div className="flex items-center gap-2 text-xs">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-glow-pulse" />
+                    <div className="px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs font-medium">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
                             <span className="text-muted-foreground capitalize">
                                 {userRole ? userRole.toLowerCase() : 'User'} Access
                             </span>
                         </div>
                     </div>
 
-                    {/* Logout button */}
+                    {/* Logout */}
                     <Button
                         variant="ghost"
-                        className="w-full justify-start text-destructive/80 hover:text-destructive hover:bg-destructive/10
-                                 transition-all duration-300 group relative overflow-hidden rounded-lg h-10 opacity-0 animate-fade-in delay-800"
+                        className="w-full justify-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-10 transition-all group"
                         onClick={handleLogout}
                     >
-                        <LogOut className="mr-3 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
-                        <span className="text-sm">Logout</span>
-                        <div className="absolute inset-0 bg-destructive/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+                        <LogOut className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-sm font-medium">Log out</span>
                     </Button>
                 </div>
             </div>

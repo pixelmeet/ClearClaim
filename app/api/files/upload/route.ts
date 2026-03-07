@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { cloudinary } from "@/lib/cloudinary";
+import { promises as fs } from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 
@@ -28,18 +29,20 @@ export async function POST(req: Request) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const result = await new Promise<{ url: string; public_id: string }>((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { folder },
-            (error, res) => {
-              if (error || !res) return reject(error);
-              resolve({ url: res.secure_url, public_id: res.public_id });
-            }
-          );
-          stream.end(buffer);
-        });
+        const uploadDir = path.join(process.cwd(), "public", "uploads", folder);
+        await fs.mkdir(uploadDir, { recursive: true });
 
-        return { filename: file.name, ...result };
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        const ext = path.extname(file.name);
+        const filename = `${file.name.replace(ext, "")}-${uniqueSuffix}${ext}`;
+
+        const filePath = path.join(uploadDir, filename);
+
+        await fs.writeFile(filePath, buffer);
+
+        const url = `/uploads/${folder}/${filename}`;
+
+        return { filename: file.name, url, public_id: url };
       })
     );
 
@@ -49,5 +52,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Upload failed" }, { status: 500 });
   }
 }
-
-

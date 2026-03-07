@@ -26,26 +26,16 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Role Access Control - redirect to role-appropriate dashboard
+  // Role Access Control
   if (pathname.startsWith('/admin')) {
     if (payload.role !== UserRole.ADMIN) {
-      const redirect =
-        payload.role === UserRole.MANAGER ? '/manager' : '/employee/dashboard';
-      return NextResponse.redirect(new URL(redirect, request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
   if (pathname.startsWith('/manager')) {
     if (payload.role !== UserRole.MANAGER && payload.role !== UserRole.ADMIN) {
-      return NextResponse.redirect(new URL('/employee/dashboard', request.url));
-    }
-  }
-
-  if (pathname.startsWith('/employee')) {
-    if (payload.role !== UserRole.EMPLOYEE && payload.role !== UserRole.ADMIN) {
-      const redirect =
-        payload.role === UserRole.MANAGER ? '/manager' : '/employee/dashboard';
-      return NextResponse.redirect(new URL(redirect, request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
@@ -56,7 +46,6 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/manager/:path*',
-    '/employee/:path*',
     '/dashboard/:path*',
     '/',
   ],

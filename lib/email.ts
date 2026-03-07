@@ -1,31 +1,37 @@
 import nodemailer from "nodemailer";
 
-const requiredEnvVars = [
-  "EMAIL_HOST",
-  "EMAIL_PORT",
-  "EMAIL_USER",
-  "EMAIL_PASS",
-  "EMAIL_FROM",
-];
-const missingEnvVars = requiredEnvVars.filter((v) => !process.env[v]);
-if (missingEnvVars.length > 0) {
-  throw new Error(
-    `Missing required environment variables for email: ${missingEnvVars.join(
-      ", "
-    )}`
-  );
+let transporterInstance: nodemailer.Transporter | null = null;
+
+function getTransporter() {
+  if (transporterInstance) return transporterInstance;
+
+  const requiredEnvVars = [
+    "EMAIL_HOST",
+    "EMAIL_PORT",
+    "EMAIL_USER",
+    "EMAIL_PASS",
+    "EMAIL_FROM",
+  ];
+  const missingEnvVars = requiredEnvVars.filter((v) => !process.env[v]);
+
+  if (missingEnvVars.length > 0) {
+    console.warn(
+      `Warning: Missing environment variables for email: ${missingEnvVars.join(", ")}. Emails will not be sent.`
+    );
+  }
+
+  transporterInstance = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT || "587"),
+    secure: parseInt(process.env.EMAIL_PORT || "587") === 465,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  return transporterInstance;
 }
-
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT!),
-
-  secure: parseInt(process.env.EMAIL_PORT!) === 465,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 /**
  * Sends a One-Time Password (OTP) email to a specified recipient.
@@ -34,10 +40,9 @@ const transporter = nodemailer.createTransport({
  */
 export async function sendOTPEmail(to: string, otp: string) {
   try {
+    const transporter = getTransporter();
     const info = await transporter.sendMail({
-      from: `"${process.env.APP_NAME || "Your App"}" <${
-        process.env.EMAIL_FROM
-      }>`,
+      from: `"${process.env.APP_NAME || "Your App"}" <${process.env.EMAIL_FROM || "noreply@example.com"}>`,
       to: to,
       subject: "Your Password Reset Code",
       text: `Your One-Time Password (OTP) for resetting your password is: ${otp}. It expires in 10 minutes.`,

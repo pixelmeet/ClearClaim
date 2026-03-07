@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -12,17 +12,17 @@ export const metadata: Metadata = {
   },
 };
 
-// Distinctive heading font - Outfit as alternative to Satoshi/Clash Display
-const sans = Outfit({
+// Elegant display/heading font
+const display = Outfit({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-display",
   display: "swap",
 });
 
-// Serif for emphasis - Fraunces is distinctive and variable
-const serif = Fraunces({
+// Highly legible and professional body font
+const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-serif",
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`antialiased ${sans.variable} ${serif.variable} ${mono.variable}`}>
+        className={`antialiased ${sans.variable} ${display.variable} ${mono.variable}`}>
         <Providers>
           {children}
           <Toaster />

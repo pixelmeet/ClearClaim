@@ -2,12 +2,11 @@ import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { MobileDashboardNav } from '@/components/MobileDashboardNav';
-import { UserRole } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { LogOut, User as UserIcon, Bell } from 'lucide-react';
 
-export default async function DashboardLayout({
+export default async function UserLayout({
     children,
 }: {
     children: React.ReactNode;
@@ -45,7 +44,7 @@ export default async function DashboardLayout({
                             <span>System</span>
                             <span className="text-border">/</span>
                             <span className="text-foreground tracking-tight px-2 py-1 bg-primary/10 text-primary rounded-md font-semibold">
-                                {session.name}
+                                Profile
                             </span>
                         </div>
                     </div>

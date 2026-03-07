@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { cloudinary } from "@/lib/cloudinary";
+import { promises as fs } from "fs";
+import path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -8,12 +9,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "publicId is required" }, { status: 400 });
     }
 
-    const res = await cloudinary.uploader.destroy(publicId);
-    return NextResponse.json({ result: res }, { status: 200 });
+    if (publicId.startsWith("/uploads/")) {
+      const filePath = path.join(process.cwd(), "public", publicId);
+      await fs.unlink(filePath).catch((e) => {
+        console.error("Failed to delete file from disk:", e);
+      });
+    }
+
+    return NextResponse.json({ result: "ok" }, { status: 200 });
   } catch (err) {
     console.error("Delete file error:", err);
     return NextResponse.json({ message: "Delete failed" }, { status: 500 });
   }
 }
-
-
