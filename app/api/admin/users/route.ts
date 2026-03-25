@@ -6,7 +6,7 @@ import { getSession } from '@/lib/auth';
 import { CreateUserSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const session = await getSession();
         if (!session || session.role !== UserRole.ADMIN) {
@@ -15,12 +15,37 @@ export async function GET() {
 
         await connectToDatabase();
 
-        // Fetch all users for this company
-        const users = await User.find({ companyId: session.companyId })
-            .select('-passwordHash') // sensitive
-            .populate('managerId', 'name email'); // Populate manager details
+        // Pagination
+        const { searchParams } = new URL(req.url);
+        const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
+        const skip = (page - 1) * limit;
 
-        return NextResponse.json({ users });
+        const role = searchParams.get('role');
+        const filter: Record<string, any> = { companyId: session.companyId };
+        if (role) {
+            filter.role = role;
+        }
+
+        const users = await User.find(filter)
+            .select('-passwordHash') // sensitive
+            .populate('managerId', 'name email') // Populate manager details
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await User.countDocuments(filter);
+
+        return NextResponse.json({
+            users,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page * limit < total,
+            },
+        });
     } catch (error) {
         console.error('Fetch users error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -5,6 +5,7 @@ export interface ICompany extends Document {
     nameLower: string;
     country: string;
     defaultCurrency: string;
+    inviteCode: string;
     address?: string;
     branches?: string[];
     website?: string;
@@ -21,6 +22,12 @@ const CompanySchema = new Schema<ICompany>(
         nameLower: { type: String, required: true, unique: true },
         country: { type: String, required: true },
         defaultCurrency: { type: String, required: true },
+        inviteCode: {
+            type: String,
+            required: true,
+            default: () =>
+                Math.random().toString(36).substring(2, 10).toUpperCase(),
+        },
         address: { type: String },
         branches: [{ type: String }],
         website: { type: String },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getSession } from '@/lib/auth';
 
 function getGenAI(): GoogleGenerativeAI {
   const key = process.env.GEMINI_API_KEY;
@@ -109,6 +110,9 @@ async function generateWithRetry(
 // ─── POST Handler ───────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
     try {
+        const session = await getSession();
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         if (!process.env.GEMINI_API_KEY) {
             return NextResponse.json(
                 { error: 'GEMINI_API_KEY environment variable is missing' },

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole, ExpenseCategory, StepType, RuleType, RuleLogic, ActionType } from '@/lib/types';
+import { UserRole, ExpenseCategory, StepType, ActionType } from '@/lib/types';
 
 // Helper for ObjectId validation (basic string check for now, can be regex)
 const objectId = z.string().min(24, 'Invalid ID format');
@@ -73,6 +73,14 @@ export const CreateExpenseSchema = z.object({
     category: z.nativeEnum(ExpenseCategory),
     description: z.string().min(5),
     expenseDate: z.string().or(z.date()), // API might send string
+    receiptUrl: z.string().url().nullable().optional(),
+});
+
+export const UpdateExpenseSchema = z.object({
+    description: z.string().min(1).optional(),
+    category: z.nativeEnum(ExpenseCategory).optional(),
+    expenseDate: z.string().or(z.date()).optional(),
+    receiptUrl: z.string().url().nullable().optional(),
 });
 
 // --- Approval Flow ---
@@ -80,22 +88,15 @@ export const ApprovalStepSchema = z.object({
     type: z.nativeEnum(StepType),
     role: z.nativeEnum(UserRole).optional(),
     userId: objectId.optional(),
+    required: z.boolean().optional(),
+    autoApprove: z.boolean().optional(),
 });
 
 export const CreateApprovalFlowSchema = z.object({
     name: z.string().min(3),
     isManagerApprover: z.boolean(),
+    minApprovalPercent: z.number().min(0).max(100).optional(),
     steps: z.array(ApprovalStepSchema),
-});
-
-// --- Approval Rule ---
-export const CreateApprovalRuleSchema = z.object({
-    flowId: objectId,
-    type: z.nativeEnum(RuleType),
-    percentageThreshold: z.number().min(0).max(100).optional(),
-    specificApproverUserId: objectId.optional(),
-    logic: z.nativeEnum(RuleLogic),
-    active: z.boolean(),
 });
 
 // --- Approval Action ---
@@ -103,10 +104,10 @@ export const ProcessApprovalSchema = z.object({
     expenseId: objectId,
     action: z.enum([ActionType.APPROVE, ActionType.REJECT]),
     comment: z.string().optional(),
-});
+}).strict();
 
 export const OverrideApprovalSchema = z.object({
     expenseId: objectId,
     action: z.enum([ActionType.OVERRIDE_APPROVE, ActionType.OVERRIDE_REJECT]),
     comment: z.string().min(5, 'Reason is required for overrides'),
-});
+}).strict();

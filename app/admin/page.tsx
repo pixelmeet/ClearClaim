@@ -6,7 +6,6 @@ import {
     Building,
     ShieldAlert,
     ArrowRight,
-    CheckSquare,
     Settings,
     TrendingUp,
     CreditCard,
@@ -29,13 +28,7 @@ const quickActions = [
         icon: Settings,
         delayClass: 'delay-200' as const,
     },
-    {
-        title: 'Approval Rules',
-        description: 'Configure expense approval workflows',
-        href: '/admin/approvals',
-        icon: CheckSquare,
-        delayClass: 'delay-300' as const,
-    },
+
     {
         title: 'All Expenses',
         description: 'View all expenses and perform global overrides',

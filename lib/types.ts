@@ -27,16 +27,7 @@ export enum StepType {
     USER = 'USER',
 }
 
-export enum RuleType {
-    PERCENTAGE = 'PERCENTAGE',
-    SPECIFIC_APPROVER = 'SPECIFIC_APPROVER',
-    HYBRID = 'HYBRID',
-}
 
-export enum RuleLogic {
-    AND = 'AND',
-    OR = 'OR',
-}
 
 export enum ActionType {
     APPROVE = 'APPROVE',

@@ -12,7 +12,6 @@ export interface IApprovalRequest extends Document {
     currency: string;
     convertedAmount?: number;
     convertedCurrency?: string;
-    approvalRule: mongoose.Types.ObjectId;
     description?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -33,7 +32,6 @@ const ApprovalRequestSchema = new Schema<IApprovalRequest>(
         currency: { type: String, required: true, trim: true },
         convertedAmount: { type: Number },
         convertedCurrency: { type: String, trim: true },
-        approvalRule: { type: Schema.Types.ObjectId, ref: 'ApprovalRule', required: true },
         description: { type: String, trim: true },
     },
     { timestamps: true }

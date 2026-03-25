@@ -15,6 +15,7 @@ import { Loader2, Building } from 'lucide-react';
 export default function AdminCompanyPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [inviteCode, setInviteCode] = useState<string>('');
 
     const form = useForm<z.infer<typeof UpdateCompanySchema>>({
         resolver: zodResolver(UpdateCompanySchema),
@@ -48,6 +49,7 @@ export default function AdminCompanyPage() {
                             contactEmail: data.company.contactEmail || '',
                             contactPhone: data.company.contactPhone || '',
                         });
+                        setInviteCode(data.company.inviteCode || '');
                 } else {
                     toast.error(typeof data.error === 'string' ? data.error : 'Failed to load company settings');
                 }
@@ -90,6 +92,47 @@ export default function AdminCompanyPage() {
                     Company Settings
                 </h2>
                 <p className="text-muted-foreground mt-1">Manage your company&apos;s core information.</p>
+            </div>
+
+            <div className="opacity-0 animate-fade-in-up delay-75">
+                <Card className="border-card-border bg-card/60 backdrop-blur-xl overflow-hidden">
+                    <CardHeader>
+                        <CardTitle>Invite Code</CardTitle>
+                        <CardDescription>
+                            Share this code with new employees so they can join your company during signup.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col md:flex-row md:items-center gap-3">
+                        {loading ? (
+                            <div className="flex justify-center py-2">
+                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : (
+                            <>
+                                <Input
+                                    readOnly
+                                    value={inviteCode || '—'}
+                                    className="bg-background/50 font-mono tracking-widest uppercase"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={!inviteCode}
+                                    onClick={async () => {
+                                        try {
+                                            await navigator.clipboard.writeText(inviteCode);
+                                            toast.success('Invite code copied');
+                                        } catch {
+                                            toast.error('Failed to copy invite code');
+                                        }
+                                    }}
+                                >
+                                    Copy
+                                </Button>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Form Card */}

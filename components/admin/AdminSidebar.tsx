@@ -6,12 +6,11 @@ import {
     LayoutDashboard,
     Building,
     Users,
-    CheckSquare,
-    FilePlus,
     LogOut,
     Shield,
     ChevronRight,
     FileText,
+    GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -29,15 +28,10 @@ const navSections = [
             { href: '/admin/company', label: 'Company Settings', icon: Building },
             { href: '/admin/users', label: 'Users', icon: Users },
             { href: '/admin/expenses', label: 'All Expenses', icon: FileText },
+            { href: '/admin/approval-flows', label: 'Approval Flows', icon: GitBranch },
         ],
     },
-    {
-        label: 'Workflows',
-        items: [
-            { href: '/admin/approvals', label: 'Approval Rules', icon: CheckSquare },
-            { href: '/admin/admin-approval', label: 'Create Rule', icon: FilePlus },
-        ],
-    },
+
 ];
 
 interface AdminSidebarProps {

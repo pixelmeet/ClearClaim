@@ -9,12 +9,15 @@ export interface IExpense extends Document {
     amountCompany: number;
     companyCurrency: string;
     fxRate: number;
+    fxRateCached?: boolean;
     fxDate: Date;
+    receiptUrl?: string | null;
     category: ExpenseCategory;
     description: string;
     expenseDate: Date;
     status: ExpenseStatus;
     currentStepIndex: number;
+    isAutoApproved?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,12 +31,15 @@ const ExpenseSchema = new Schema<IExpense>(
         amountCompany: { type: Number, required: true },
         companyCurrency: { type: String, required: true },
         fxRate: { type: Number, required: true },
+        fxRateCached: { type: Boolean, default: false },
         fxDate: { type: Date, required: true },
+        receiptUrl: { type: String, default: null },
         category: { type: String, enum: Object.values(ExpenseCategory), required: true },
         description: { type: String, required: true },
         expenseDate: { type: Date, required: true },
         status: { type: String, enum: Object.values(ExpenseStatus), default: ExpenseStatus.DRAFT },
         currentStepIndex: { type: Number, default: 0 },
+        isAutoApproved: { type: Boolean, default: false },
     },
     { timestamps: true }
 );
@@ -41,6 +47,7 @@ const ExpenseSchema = new Schema<IExpense>(
 ExpenseSchema.index({ companyId: 1, employeeId: 1 });
 ExpenseSchema.index({ companyId: 1, status: 1 });
 ExpenseSchema.index({ companyId: 1, employeeId: 1, status: 1 });
+ExpenseSchema.index({ companyId: 1, createdAt: -1 });
 
 const Expense: Model<IExpense> = mongoose.models.Expense || mongoose.model<IExpense>('Expense', ExpenseSchema);
 

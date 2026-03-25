@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { fullName, email, password, companyName, country } = result.data;
+    const { fullName, email, password, companyName, country, inviteCode } =
+      result.data;
 
     await connectToDatabase();
 
@@ -81,6 +82,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Company exists: Create EMPLOYEE user
+    if (!inviteCode || inviteCode !== existingCompany.inviteCode) {
+      return NextResponse.json(
+        { error: 'Invalid invite code. Ask your company admin for the code.' },
+        { status: 403 }
+      );
+    }
+
     const existingUser = await User.findOne({
       companyId: existingCompany._id,
       email: emailLower,

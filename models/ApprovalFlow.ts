@@ -1,16 +1,20 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { UserRole, StepType } from '@/lib/types';
+import { ExpenseCategory, UserRole, StepType } from '@/lib/types';
 
 export interface IApprovalStep {
     type: StepType;
     role?: UserRole;
     userId?: mongoose.Types.ObjectId;
+    required?: boolean;
+    autoApprove?: boolean;
 }
 
 export interface IApprovalFlow extends Document {
     companyId: mongoose.Types.ObjectId;
     name: string;
+    category?: ExpenseCategory | null;
     isManagerApprover: boolean;
+    minApprovalPercent: number;
     steps: IApprovalStep[];
     createdAt: Date;
     updatedAt: Date;
@@ -20,17 +24,51 @@ const ApprovalStepSchema = new Schema<IApprovalStep>({
     type: { type: String, enum: Object.values(StepType), required: true },
     role: { type: String, enum: Object.values(UserRole) },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    required: { type: Boolean, default: false },
+    autoApprove: { type: Boolean, default: false },
 });
 
 const ApprovalFlowSchema = new Schema<IApprovalFlow>(
     {
         companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
-        name: { type: String, required: true },
+        name: { type: String, required: true, trim: true },
+        category: {
+            type: String,
+            enum: [...Object.values(ExpenseCategory), null],
+            default: null,
+        },
         isManagerApprover: { type: Boolean, default: true },
-        steps: [ApprovalStepSchema],
+        minApprovalPercent: { type: Number, min: 0, max: 100, default: 100 },
+        steps: {
+            type: [ApprovalStepSchema],
+            validate: {
+                validator: (v: IApprovalStep[]) => v.length >= 1,
+                message: 'At least one approval step is required.',
+            },
+        },
     },
     { timestamps: true }
 );
+
+// Unique flow name per company
+ApprovalFlowSchema.index({ companyId: 1, name: 1 }, { unique: true });
+ApprovalFlowSchema.index({ companyId: 1, category: 1 });
+
+// Pre-save validation: required + autoApprove cannot both be true
+ApprovalFlowSchema.pre('save', function (next) {
+    for (const step of this.steps) {
+        if (step.required && step.autoApprove) {
+            return next(new Error('A step cannot be both required and autoApprove.'));
+        }
+        if (step.type === StepType.USER && !step.userId) {
+            return next(new Error('USER step must have a userId.'));
+        }
+        if (step.type === StepType.ROLE && !step.role) {
+            return next(new Error('ROLE step must have a role.'));
+        }
+    }
+    next();
+});
 
 const ApprovalFlow: Model<IApprovalFlow> = mongoose.models.ApprovalFlow || mongoose.model<IApprovalFlow>('ApprovalFlow', ApprovalFlowSchema);
 

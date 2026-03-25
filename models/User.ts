@@ -8,6 +8,8 @@ export interface IUser extends Document {
     passwordHash: string;
     role: UserRole;
     managerId?: mongoose.Types.ObjectId;
+    delegatedTo?: mongoose.Types.ObjectId | null;
+    delegationExpiresAt?: Date | null;
     isDisabled: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -21,6 +23,8 @@ const UserSchema = new Schema<IUser>(
         passwordHash: { type: String, required: true },
         role: { type: String, enum: Object.values(UserRole), default: UserRole.EMPLOYEE },
         managerId: { type: Schema.Types.ObjectId, ref: 'User' },
+        delegatedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        delegationExpiresAt: { type: Date, default: null },
         isDisabled: { type: Boolean, default: false },
     },
     { timestamps: true }
@@ -28,6 +32,8 @@ const UserSchema = new Schema<IUser>(
 
 // Unique combination of companyId + email (multi-tenant)
 UserSchema.index({ companyId: 1, email: 1 }, { unique: true });
+UserSchema.index({ companyId: 1, managerId: 1 });
+UserSchema.index({ companyId: 1, role: 1 });
 
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

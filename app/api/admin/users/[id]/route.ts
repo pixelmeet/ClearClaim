@@ -57,11 +57,15 @@ export async function PATCH(
             updates.managerId = null;
         }
 
-        const updatedUser = await User.findByIdAndUpdate(
-            id,
+        const updatedUser = await User.findOneAndUpdate(
+            { _id: id, companyId: session.companyId },
             { $set: updates },
             { new: true, runValidators: true }
         ).select('-passwordHash');
+
+        if (!updatedUser) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
 
         return NextResponse.json({ user: updatedUser });
 

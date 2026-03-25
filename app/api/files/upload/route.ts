@@ -1,11 +1,24 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { getSession } from "@/lib/auth";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const rl = rateLimit(`files-upload:${session.userId}`, 20, 60_000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } }
+      );
+    }
+
     const formData = await req.formData();
 
     const folder = (formData.get("folder") as string) || "uploads";

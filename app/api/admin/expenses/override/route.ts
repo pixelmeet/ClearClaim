@@ -5,12 +5,24 @@ import ApprovalAction from '@/models/ApprovalAction';
 import { getSession } from '@/lib/auth';
 import { OverrideApprovalSchema } from '@/lib/validation';
 import { UserRole, ActionType, ExpenseStatus } from '@/lib/types';
+import { rateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
     try {
         const session = await getSession();
         if (!session || session.role !== UserRole.ADMIN) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const rl = rateLimit(`admin-override:${session.userId}`, 20, 60_000);
+        if (!rl.ok) {
+            return NextResponse.json(
+                { error: 'Too many requests' },
+                {
+                    status: 429,
+                    headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) },
+                }
+            );
         }
 
         const body = await req.json();

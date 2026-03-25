@@ -25,6 +25,7 @@ export default function NewExpensePage() {
     const [ocrHealth, setOcrHealth] = useState<'ok' | 'degraded' | 'error' | 'loading'>('loading');
     const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<z.infer<typeof CreateExpenseSchema>>({
@@ -71,15 +72,45 @@ export default function NewExpensePage() {
         if (file) {
             setReceiptFile(file);
             setReceiptPreview(URL.createObjectURL(file));
+            setReceiptUrl(null);
         }
     };
 
     const removeReceipt = () => {
         setReceiptFile(null);
         setReceiptPreview(null);
+        setReceiptUrl(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+    };
+
+    const uploadReceiptIfNeeded = async (): Promise<string | null> => {
+        if (!receiptFile) return null;
+        if (receiptUrl) return receiptUrl;
+
+        const formData = new FormData();
+        formData.append('file', receiptFile);
+        formData.append('folder', 'receipts');
+
+        const res = await fetch('/api/files/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || data?.message || 'Receipt upload failed');
+        }
+
+        const data = await res.json();
+        const url = data?.uploads?.[0]?.url;
+        if (!url || typeof url !== 'string') {
+            throw new Error('Receipt upload did not return a URL');
+        }
+
+        setReceiptUrl(url);
+        return url;
     };
 
     const extractDetails = async () => {
@@ -157,10 +188,15 @@ export default function NewExpensePage() {
     async function onSubmit(values: z.infer<typeof CreateExpenseSchema>) {
         setLoading(true);
         try {
+            const uploadedReceiptUrl = await uploadReceiptIfNeeded();
+
             const res = await fetch('/api/expenses', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
+                body: JSON.stringify({
+                    ...values,
+                    receiptUrl: uploadedReceiptUrl ?? null,
+                }),
             });
 
             if (res.ok) {
@@ -212,6 +248,7 @@ export default function NewExpensePage() {
                                 accept="image/*"
                                 className="hidden"
                                 ref={fileInputRef}
+                                aria-label="Upload receipt image"
                                 onChange={handleFileChange}
                             />
                             <Button

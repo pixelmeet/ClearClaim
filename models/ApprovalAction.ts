@@ -23,6 +23,9 @@ const ApprovalActionSchema = new Schema<IApprovalAction>(
     { timestamps: true }
 );
 
+ApprovalActionSchema.index({ expenseId: 1, createdAt: -1 });
+ApprovalActionSchema.index({ companyId: 1, approverId: 1 });
+
 const ApprovalAction: Model<IApprovalAction> = mongoose.models.ApprovalAction || mongoose.model<IApprovalAction>('ApprovalAction', ApprovalActionSchema);
 
 export default ApprovalAction;

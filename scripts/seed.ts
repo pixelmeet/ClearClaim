@@ -5,8 +5,6 @@ import mongoose from 'mongoose';
 import User, { UserRole } from '../models/User';
 import Company from '../models/Company';
 import ApprovalFlow, { StepType } from '../models/ApprovalFlow';
-import ApprovalRule from '../models/ApprovalRule';
-import { RuleType, RuleLogic } from '../lib/types';
 import Expense, { ExpenseStatus, ExpenseCategory } from '../models/Expense';
 import ApprovalAction, { ActionType } from '../models/ApprovalAction';
 import bcrypt from 'bcryptjs';
@@ -28,7 +26,6 @@ async function seed() {
             Company.deleteMany({}),
             User.deleteMany({}),
             ApprovalFlow.deleteMany({}),
-            ApprovalRule.deleteMany({}),
             Expense.deleteMany({}),
             ApprovalAction.deleteMany({}),
         ]);
@@ -108,23 +105,6 @@ async function seed() {
             ],
         });
         console.log('Flow created');
-
-        // 4. Rule
-        // Hybrid: 60% approval OR CFO approves
-        // Actually Logic for Percentage is "Threshold of TOTAL chain".
-        // Chain length: Manager(1) + Finance(1) + Director(1) + CFO(1) = 4 steps.
-        // 60% of 4 = 2.4 => 3 approvals needed to auto-approve?
-        // Let's say if CFO approves (Specific), it's done.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (ApprovalRule as any).create({
-            companyId: company._id,
-            flowId: flow._id,
-            type: RuleType.HYBRID,
-            percentageThreshold: 60,
-            specificApproverUserId: cfo._id,
-            logic: RuleLogic.OR,
-        });
-        console.log('Rule created');
 
         // 5. Demo Expenses
 

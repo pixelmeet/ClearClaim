@@ -20,39 +20,4 @@ export async function logoutAction() {
   await logoutUser();
 }
 
-export async function deleteApprovalRuleAction(ruleId: string) {
-  const session = await getSessionUser();
-  if (!session) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  if (session.role !== 'ADMIN') {
-    return { success: false, error: 'Unauthorized: Admin access required' };
-  }
-
-  // Lazy-load DB + model so the homepage's Navbar (getCurrentUserAction)
-  // doesn't force mongoose compilation/loading during initial route compilation.
-  const connectToDatabase = (await import('@/lib/db')).default;
-  const ApprovalRule = (await import('@/models/ApprovalRule')).default;
-
-  await connectToDatabase();
-
-  const rule = await ApprovalRule.findById(ruleId);
-  if (!rule) {
-    return { success: false, error: 'Rule not found' };
-  }
-
-  if (rule.organization !== session.companyId) {
-    return { success: false, error: 'Unauthorized: Organization mismatch' };
-  }
-
-  await ApprovalRule.findByIdAndDelete(ruleId);
-
-  return {
-    success: true,
-    deletedRule: {
-      id: rule._id?.toString(),
-      ruleName: rule.ruleName,
-    },
-  };
-}

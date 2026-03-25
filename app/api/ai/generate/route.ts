@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 
 function getSizeFromAspect(aspectRatio: string | undefined, fallbackWidth: number, fallbackHeight: number) {
   if (!aspectRatio || aspectRatio === 'Default') return { width: fallbackWidth, height: fallbackHeight };
@@ -11,6 +12,9 @@ function getSizeFromAspect(aspectRatio: string | undefined, fallbackWidth: numbe
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { prompt, style, aspectRatio, model: modelFromBody } = body ?? {};
 

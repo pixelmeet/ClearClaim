@@ -2,25 +2,71 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Expense from '@/models/Expense';
 import Company from '@/models/Company';
+import FxRate from '@/models/FxRate';
 import { getSession } from '@/lib/auth';
 import { CreateExpenseSchema } from '@/lib/validation';
 import { ExpenseStatus } from '@/lib/types'; // Use Types
 // Removing unused UserRole
 import { initializeApproval } from '@/lib/approvalEngine';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const session = await getSession();
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         await connectToDatabase();
 
+        const { searchParams } = new URL(req.url);
+        const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
+        const skip = (page - 1) * limit;
+
         // Employees see own expenses. Managers sees own? or Team's? 
         // Spec: "My expenses list" -> Own expenses.
-        const expenses = await Expense.find({ employeeId: session.userId })
-            .sort({ createdAt: -1 });
+        const filter: Record<string, any> = { employeeId: session.userId, companyId: session.companyId };
 
-        return NextResponse.json({ expenses });
+        const status = searchParams.get('status');
+        if (status) filter.status = status;
+
+        const category = searchParams.get('category');
+        if (category) filter.category = category;
+
+        const dateFrom = searchParams.get('dateFrom');
+        const dateTo = searchParams.get('dateTo');
+        if (dateFrom || dateTo) {
+            filter.expenseDate = {};
+            if (dateFrom) filter.expenseDate.$gte = new Date(dateFrom);
+            if (dateTo) filter.expenseDate.$lte = new Date(dateTo);
+        }
+
+        const amountMin = searchParams.get('amountMin');
+        const amountMax = searchParams.get('amountMax');
+        if (amountMin || amountMax) {
+            filter.amountOriginal = {};
+            if (amountMin) filter.amountOriginal.$gte = Number(amountMin);
+            if (amountMax) filter.amountOriginal.$lte = Number(amountMax);
+        }
+
+        const search = searchParams.get('search');
+        if (search) filter.description = { $regex: search, $options: 'i' };
+
+        const expenses = await Expense.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Expense.countDocuments(filter);
+
+        return NextResponse.json({
+            expenses,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page * limit < total,
+            },
+        });
     } catch {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
@@ -38,7 +84,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
         }
 
-        const { amountOriginal, currencyOriginal, category, description, expenseDate } = result.data;
+        const { amountOriginal, currencyOriginal, category, description, expenseDate, receiptUrl } = result.data;
 
         await connectToDatabase();
 
@@ -47,18 +93,38 @@ export async function POST(req: NextRequest) {
 
         let amountCompany = amountOriginal;
         let fxRate = 1;
+        let fxRateCached = false;
 
         // Currency Conversion
         if (currencyOriginal !== company.defaultCurrency) {
             try {
                 const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${currencyOriginal}`);
+                if (!res.ok) throw new Error('FX API returned non-200');
                 const data = await res.json();
                 fxRate = data.rates[company.defaultCurrency];
                 if (!fxRate) throw new Error('Rate not found');
                 amountCompany = Number((amountOriginal * fxRate).toFixed(2));
+
+                await FxRate.findOneAndUpdate(
+                    { fromCurrency: currencyOriginal, toCurrency: company.defaultCurrency },
+                    { rate: fxRate, fetchedAt: new Date() },
+                    { upsert: true, new: true }
+                );
             } catch (e) {
                 console.error('FX Error:', e);
-                return NextResponse.json({ error: 'Failed to fetch exchange rate' }, { status: 500 }); // or allow manual entry? Spec says "Convert... at submission time"
+                const cached = await FxRate.findOne({
+                    fromCurrency: currencyOriginal,
+                    toCurrency: company.defaultCurrency,
+                });
+                if (!cached) {
+                    return NextResponse.json(
+                        { error: 'Currency conversion unavailable and no cached rate exists. Try again later.' },
+                        { status: 503 }
+                    );
+                }
+                fxRate = cached.rate;
+                fxRateCached = true;
+                amountCompany = Number((amountOriginal * fxRate).toFixed(2));
             }
         }
 
@@ -70,10 +136,12 @@ export async function POST(req: NextRequest) {
             amountCompany,
             companyCurrency: company.defaultCurrency,
             fxRate,
+            fxRateCached,
             fxDate: new Date(),
             category,
             description,
             expenseDate,
+            receiptUrl: receiptUrl ?? null,
             status: ExpenseStatus.SUBMITTED, // Spec: "It becomes SUBMITTED then PENDING."
             currentStepIndex: 0,
         });

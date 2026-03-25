@@ -2,7 +2,6 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import mongoose from 'mongoose';
 import ApprovalFlow from '../models/ApprovalFlow';
-import ApprovalRule from '../models/ApprovalRule';
 import Expense from '../models/Expense';
 import User from '../models/User';
 import Company from '../models/Company';
@@ -20,9 +19,6 @@ async function debug() {
 
         const flows = await ApprovalFlow.find().lean();
         console.log('\nApprovalFlows:', JSON.stringify(flows, null, 2));
-
-        const rules = await ApprovalRule.find().lean();
-        console.log('\nApprovalRules:', JSON.stringify(rules, null, 2));
 
         const expenses = await Expense.find().lean();
         console.log('\nExpenses (first 2):', JSON.stringify(expenses.slice(0, 2), null, 2));
