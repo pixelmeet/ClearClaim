@@ -2,8 +2,6 @@
 
 import { getSessionUser } from '@/lib/auth/getSessionUser';
 import { logoutUser } from '@/lib/auth';
-import connectToDatabase from '@/lib/db';
-import ApprovalRule from '@/models/ApprovalRule';
 
 export async function getCurrentUserAction() {
   const session = await getSessionUser();
@@ -31,6 +29,11 @@ export async function deleteApprovalRuleAction(ruleId: string) {
   if (session.role !== 'ADMIN') {
     return { success: false, error: 'Unauthorized: Admin access required' };
   }
+
+  // Lazy-load DB + model so the homepage's Navbar (getCurrentUserAction)
+  // doesn't force mongoose compilation/loading during initial route compilation.
+  const connectToDatabase = (await import('@/lib/db')).default;
+  const ApprovalRule = (await import('@/models/ApprovalRule')).default;
 
   await connectToDatabase();
 

@@ -112,7 +112,8 @@ export default function ManagerApprovalsPage() {
                     {expenses.map((expense, idx) => (
                         <Card
                             key={expense._id}
-                            className={`border-card-border bg-card/60 backdrop-blur-xl hover:shadow-lg transition-all duration-300 opacity-0 animate-fade-in-up delay-${(idx % 5 + 1) * 100}`}
+                            className="border-card-border bg-card/60 backdrop-blur-xl hover:shadow-lg transition-all duration-300 opacity-0 animate-fade-in-up"
+                            style={{ animationDelay: `${(idx % 5 + 1) * 100}ms` }}
                         >
                             <CardContent className="p-4 md:p-6">
                                 {/* Header: Employee + Category + Status */}

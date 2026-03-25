@@ -40,7 +40,7 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.3 }}>
             <Button
               size="lg"
-              className="bg-primary hover:bg-chart-2 text-primary-foreground text-base py-6 px-8 font-sans font-semibold rounded-md"
+              className="bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover text-white text-base py-6 px-10 font-sans font-semibold rounded-xl shadow-lg shadow-primary/20 transition-all duration-300 transform hover:scale-[1.02]"
               asChild>
               <Link href={HERO_CONTENT.ctas.primary.href}>
                 {HERO_CONTENT.ctas.primary.label}
@@ -49,7 +49,7 @@ export function Hero() {
             <Button
               size="lg"
               variant="outline"
-              className="border-border text-foreground/80 bg-transparent hover:bg-secondary hover:text-foreground text-base py-6 px-8 font-sans font-semibold rounded-md"
+              className="border-border/60 text-foreground/90 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:text-foreground text-base py-6 px-10 font-sans font-semibold rounded-xl transition-all duration-300"
               asChild>
               <Link href={HERO_CONTENT.ctas.secondary.href}>
                 {HERO_CONTENT.ctas.secondary.label}

@@ -5,6 +5,7 @@ import { LoginSchema } from '@/lib/validation';
 import { createSessionCookie } from '@/lib/auth/createSessionCookie';
 import { verifyPassword } from '@/lib/auth/verifyPassword';
 import { UserRole } from '@/lib/types';
+import { clientKeyFromRequest, rateLimit } from '@/lib/rateLimit';
 
 const ROLE_REDIRECTS: Record<UserRole, string> = {
   [UserRole.ADMIN]: '/admin',
@@ -14,6 +15,21 @@ const ROLE_REDIRECTS: Record<UserRole, string> = {
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(
+      `login:${clientKeyFromRequest(req)}`,
+      20,
+      15 * 60 * 1000
+    );
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many attempts. Try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) },
+        }
+      );
+    }
+
     const body = await req.json();
     const result = LoginSchema.safeParse(body);
 

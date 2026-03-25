@@ -22,6 +22,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { NAVBAR } from "@/constants/layout/navbar-constants";
 import { getCurrentUserAction } from "@/app/actions/auth";
 import { canAccessRole } from "@/types/roles";
+import { NotificationBell } from "./notification-bell";
 
 interface User {
   id: string;
@@ -112,48 +113,44 @@ export function Navbar() {
 
   return (
     <motion.header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-primary shadow-lg" : "bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled 
+        ? "bg-background/80 backdrop-blur-xl border-b border-white/5 shadow-2xl shadow-primary/5 py-2" 
+        : "bg-transparent py-4"
         }`}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, delay: 0.8 }}>
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}>
       <div className="px-4 md:px-6 py-2">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2 z-10">
-            <Image
-              src={scrolled ? NAVBAR.logo.dark : NAVBAR.logo.light}
-              alt={NAVBAR.logo.alt}
-              width={NAVBAR.logo.width}
-              height={NAVBAR.logo.height}
-              className="relative"
-              priority
-            />
+          <Link href="/" className="flex items-center gap-3 z-10 group">
+            <div className="relative w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-500">
+               <Image
+                 src={scrolled ? NAVBAR.logo.dark : NAVBAR.logo.light}
+                 alt={NAVBAR.logo.alt}
+                 width={24}
+                 height={24}
+                 className="relative invert dark:invert-0"
+                 priority
+               />
+            </div>
 
-            <div className="font-bold text-xl font-serif">
-              <span
-                className={
-                  scrolled ? "text-primary-foreground" : "text-muted-foreground"
-                }>
-                {NAVBAR.name.primary}
-              </span>
-              <span
-                className={
-                  scrolled ? "text-primary-foreground" : "text-primary"
-                }>
-                {NAVBAR.name.secondary}
-              </span>
+            <div className="font-bold text-2xl tracking-tighter flex items-center gap-1">
+              <span className="text-foreground">{NAVBAR.name.primary}</span>
+              <span className="text-primary">{NAVBAR.name.secondary}</span>
             </div>
           </Link>
 
           <div className="hidden lg:flex items-center space-x-6">
             {navItems.map((item) => (
-              <NavItem key={item.href} {...item} isScrolled={scrolled} />
+              <NavItem key={item.href} {...item} />
             ))}
 
             {isLoading ? (
               <div className="w-20 h-9 bg-muted rounded-md animate-pulse"></div>
             ) : user ? (
-              <DropdownMenu>
+              <div className="flex items-center gap-4">
+                <NotificationBell />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
@@ -183,8 +180,7 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  {(canAccessRole(user.role, "admin") ||
-                    user.email?.endsWith("@admin")) && (
+                  {canAccessRole(user.role, "admin") && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="cursor-pointer">
                           <Shield className="mr-2 h-4 w-4" />
@@ -201,6 +197,7 @@ export function Navbar() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+             </div>
             ) : (
               <Button
                 asChild
@@ -220,7 +217,8 @@ export function Navbar() {
             )}
           </div>
 
-          <div className="lg:hidden justify-self-end">
+          <div className="lg:hidden flex items-center justify-self-end gap-2">
+            {user && <NotificationBell />}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -282,8 +280,7 @@ export function Navbar() {
                               </Link>
                             </Button>
                           )}
-                          {(canAccessRole(user.role, "admin") ||
-                            user.email?.endsWith("@admin")) && (
+                          {canAccessRole(user.role, "admin") && (
                               <Button
                                 asChild
                                 variant="outline"
@@ -338,22 +335,26 @@ function NavItem({
   href,
   label,
   icon,
-  isScrolled,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
-  isScrolled: boolean;
 }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2 group px-3 py-2 rounded-md transition-all ${isScrolled
-        ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
-        : "text-muted-foreground hover:text-primary hover:bg-foreground/5"
-        }`}>
-      <div className="transition-colors">{icon}</div>
-      <span className="text-sm font-medium transition-colors font-sans">
+      className={`flex items-center gap-2 group px-4 py-2 rounded-xl transition-all duration-300 font-sans ${
+        isActive 
+          ? "bg-primary/10 text-primary shadow-sm" 
+          : "text-muted-foreground hover:text-foreground hover:bg-background"
+      }`}>
+      <div className={`transition-all duration-300 ${isActive ? "scale-110" : "group-hover:scale-110 group-hover:rotate-12"}`}>
+        {icon}
+      </div>
+      <span className="text-sm font-bold tracking-tight">
         {label}
       </span>
     </Link>

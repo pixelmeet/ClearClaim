@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize the API client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+function getGenAI(): GoogleGenerativeAI {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error('GEMINI_API_KEY is required for OCR');
+  }
+  return new GoogleGenerativeAI(key);
+}
 
 // ─── Concurrency Protection (Per-Process) ────────────────────────────────────
 // Note: This is per-process only and won't protect against horizontal scaling
@@ -132,7 +137,7 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
         const base64Data = buffer.toString('base64');
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
 
         const prompt = "Analyze this receipt or expense document image and extract the following information. Return ONLY valid minified JSON. No markdown, no code fences. The JSON object must have these exact fields: 'amount' (string, remove currency symbols), 'currency' (e.g., 'USD', 'EUR'), 'description' (detailed description), 'category' (map to 'Food', 'Travel', 'Office', 'Software', 'Training', or 'Other'), 'date' (dd/mm/yyyy), and 'merchant'. If any information cannot be extracted, use 'N/A'.";
 

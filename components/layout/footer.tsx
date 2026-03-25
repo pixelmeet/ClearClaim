@@ -8,19 +8,24 @@ export function Footer() {
     footerConfig;
 
   return (
-    <footer className="bg-card text-card-foreground relative overflow-hidden border-t">
-      <div className="container mx-auto px-4 py-12 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          <div>
-            <div className="flex items-center mb-4 font-serif text-xl">
-              <span className="text-foreground font-semibold">
+    <footer className="bg-[#020617] text-white/80 relative overflow-hidden border-t border-white/5 py-24">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[180px]" />
+        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[150px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
+          <div className="col-span-1 md:col-span-2 lg:col-span-1">
+            <div className="flex items-center mb-6 font-sans text-2xl tracking-tighter">
+              <span className="text-white font-bold">
                 {companyName.primary}
               </span>
-              <span className="text-primary font-semibold">
+              <span className="text-primary font-bold">
                 {companyName.secondary}
               </span>
             </div>
-            <p className="text-muted-foreground mb-6 text-sm font-sans">
+            <p className="text-white/50 mb-8 text-base leading-relaxed max-w-sm">
               {tagline}
             </p>
             <div className="flex space-x-4">
@@ -34,66 +39,60 @@ export function Footer() {
               ))}
             </div>
           </div>
-
+ 
           {/* Dynamic Sections */}
           {sections.map((section) => (
             <div key={section.title}>
-              <h3 className="font-serif font-semibold text-lg mb-4">
+              <h3 className="text-white font-bold text-lg mb-8 tracking-tight">
                 {section.title}
               </h3>
-              {section.links.map((link) => (
-                <FooterLink key={link.label} href={link.href}>
-                  {link.label}
-                </FooterLink>
-              ))}
+              <div className="flex flex-col gap-4">
+                {section.links.map((link) => (
+                  <FooterLink key={link.label} href={link.href}>
+                    {link.label}
+                  </FooterLink>
+                ))}
+              </div>
             </div>
           ))}
-
+ 
           {/* Contact Section */}
           <div>
-            <h3 className="font-serif font-semibold text-lg mb-4">
-              Contact Us
+            <h3 className="text-white font-bold text-lg mb-8 tracking-tight">
+              Get in Touch
             </h3>
-            <div className="flex items-start mb-3">
-              <MapPin className="h-5 w-5 mr-3 text-primary flex-shrink-0 mt-1" />
-              <span className="text-muted-foreground text-sm font-sans">
-                {contactInfo.address.line1}
-                <br />
-                {contactInfo.address.line2}
-                {contactInfo.address.line3 && (
-                  <>
-                    <br />
-                    {contactInfo.address.line3}
-                  </>
-                )}
-              </span>
-            </div>
-            <div className="flex items-center mb-3">
-              <Mail className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-              <span className="text-muted-foreground text-sm font-sans">
-                {contactInfo.email}
-              </span>
-            </div>
-            <div className="flex items-center mb-3">
-              <Phone className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-              <span className="text-muted-foreground text-sm font-sans">
-                {contactInfo.phone}
-              </span>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <span className="text-white/60 text-sm leading-relaxed">
+                  {contactInfo.address.line1}
+                  <br />
+                  {contactInfo.address.line2}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-primary">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <span className="text-white/60 text-sm">{contactInfo.email}</span>
+              </div>
             </div>
           </div>
         </div>
-
+ 
         {/* Legal Section */}
-        <div className="border-t border-border pt-8 text-center">
-          <p className="text-muted-foreground text-sm font-sans">
-            &copy; {new Date().getFullYear()} {legal.copyrightText}
+        <div className="border-t border-white/5 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-white/40 text-sm font-medium">
+            &copy; {new Date().getFullYear()} {legal.copyrightText}. All rights reserved.
           </p>
-          <div className="flex justify-center mt-4 space-x-6 text-sm text-muted-foreground font-sans">
+          <div className="flex items-center gap-8 text-sm text-white/50 font-medium">
             {legal.links.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="hover:text-foreground transition-colors">
+                className="hover:text-primary transition-colors duration-300">
                 {link.label}
               </Link>
             ))}

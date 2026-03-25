@@ -11,13 +11,12 @@ export type JWTPayload = SessionPayload;
 
 export async function signToken(payload: JWTPayload) {
   const { SignJWT } = await import('jose');
-  const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
-  const key = new TextEncoder().encode(JWT_SECRET);
+  const { getJwtSecretKey } = await import('./auth/jwtSecret');
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h')
-    .sign(key);
+    .sign(getJwtSecretKey());
 }
 
 export { verifyToken };

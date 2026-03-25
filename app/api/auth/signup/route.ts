@@ -6,9 +6,25 @@ import { SignupSchema } from '@/lib/validation';
 import { createSessionCookie } from '@/lib/auth/createSessionCookie';
 import { hashPassword } from '@/lib/auth/hashPassword';
 import { getCurrencyForCountry } from '@/lib/api/restcountries';
+import { clientKeyFromRequest, rateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(
+      `signup:${clientKeyFromRequest(req)}`,
+      10,
+      60 * 60 * 1000
+    );
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many signup attempts. Try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) },
+        }
+      );
+    }
+
     const body = await req.json();
     const result = SignupSchema.safeParse(body);
 

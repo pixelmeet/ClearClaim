@@ -178,8 +178,15 @@ export default function NewExpensePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6" suppressHydrationWarning>
-            <Card className="bg-primary/5 border-primary/20">
+        <div className="max-w-3xl mx-auto space-y-12 py-8 px-4" suppressHydrationWarning>
+            <div className="space-y-3 opacity-0 animate-fade-in-up">
+                <h2 className="text-4xl font-extrabold tracking-tighter bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    New Financial Disbursement
+                </h2>
+                <p className="text-muted-foreground text-lg font-medium">Record a new expense claim for enterprise reimbursement.</p>
+            </div>
+
+            <Card className="bg-primary/[0.03] border-primary/20 shadow-2xl shadow-primary/5 rounded-3xl overflow-hidden opacity-0 animate-fade-in-up delay-100">
                 <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                         <Sparkles className="w-5 h-5 mr-2 text-primary" />
@@ -255,12 +262,12 @@ export default function NewExpensePage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Submit New Expense</CardTitle>
-                    <CardDescription>Enter expense details. Amount will be converted to company currency.</CardDescription>
+            <Card className="rounded-3xl border-card-border shadow-2xl shadow-foreground/[0.02] opacity-0 animate-fade-in-up delay-200">
+                <CardHeader className="p-8 border-b border-card-border/50">
+                    <CardTitle className="text-2xl font-bold tracking-tight">Claim Specification</CardTitle>
+                    <CardDescription className="text-base">Enter the precise details of your financial transaction.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-8">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -362,8 +369,18 @@ export default function NewExpensePage() {
                                 )}
                             />
 
-                            <Button type="submit" className="w-full" disabled={loading}>
-                                {loading ? 'Submitting...' : 'Submit Expense'}
+                            <Button type="submit" size="lg" className="w-full h-14 font-bold text-lg shadow-xl shadow-primary/20 group" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                                        Processing Submission...
+                                    </>
+                                ) : (
+                                    <>
+                                        Authorize & Submit Claim
+                                        <Sparkles className="ml-3 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                                    </>
+                                )}
                             </Button>
                         </form>
                     </Form>

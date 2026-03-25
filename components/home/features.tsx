@@ -61,19 +61,22 @@ function FeatureCard({
 }) {
   return (
     <motion.div
-      className="bg-card rounded-xl border border-border p-6 shadow-lg hover:shadow-xl transition-all duration-300 group"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      className="bg-card/40 backdrop-blur-md rounded-2xl border border-card-border p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 group relative overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
       viewport={{ once: true }}
-      whileHover={{ y: -5 }}>
-      <div className="p-3 rounded-lg bg-primary/10 w-fit mb-4 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-        {icon}
+      whileHover={{ y: -8 }}>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="relative z-10">
+        <div className="p-4 rounded-xl bg-primary/10 w-fit mb-6 text-primary group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-sm">
+          {icon}
+        </div>
+        <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+          {title}
+        </h3>
+        <p className="text-muted-foreground leading-relaxed font-sans">{description}</p>
       </div>
-      <h3 className="font-serif text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-        {title}
-      </h3>
-      <p className="text-sm text-muted-foreground font-sans">{description}</p>
     </motion.div>
   );
 }

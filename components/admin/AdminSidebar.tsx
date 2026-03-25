@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutDashboard,
     Building,
@@ -11,6 +11,7 @@ import {
     LogOut,
     Shield,
     ChevronRight,
+    FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const navSections = [
         items: [
             { href: '/admin/company', label: 'Company Settings', icon: Building },
             { href: '/admin/users', label: 'Users', icon: Users },
+            { href: '/admin/expenses', label: 'All Expenses', icon: FileText },
         ],
     },
     {
@@ -45,10 +47,15 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ className, onNavigate }: AdminSidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
 
     const handleLogout = async () => {
-        document.cookie = 'auth_token=; Max-Age=0; path=/;';
-        window.location.href = '/login';
+        try {
+            await fetch('/api/auth/signout', { method: 'POST' });
+        } finally {
+            router.refresh();
+            router.push('/login');
+        }
     };
 
     let animIndex = 0;

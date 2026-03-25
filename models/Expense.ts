@@ -38,6 +38,10 @@ const ExpenseSchema = new Schema<IExpense>(
     { timestamps: true }
 );
 
+ExpenseSchema.index({ companyId: 1, employeeId: 1 });
+ExpenseSchema.index({ companyId: 1, status: 1 });
+ExpenseSchema.index({ companyId: 1, employeeId: 1, status: 1 });
+
 const Expense: Model<IExpense> = mongoose.models.Expense || mongoose.model<IExpense>('Expense', ExpenseSchema);
 
 export default Expense;

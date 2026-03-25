@@ -40,8 +40,11 @@ export async function PATCH(req: NextRequest) {
             return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
         }
 
-        const { name, country, defaultCurrency } = result.data;
+        const { name, country, defaultCurrency, address, branches, website, taxId, contactEmail, contactPhone } = result.data;
         const nameLower = name.trim().toLowerCase();
+        
+        // Parse comma-separated branches string into an array
+        const parsedBranches = branches ? branches.split(',').map(v => v.trim()).filter(Boolean) : [];
 
         await connectToDatabase();
 
@@ -57,7 +60,7 @@ export async function PATCH(req: NextRequest) {
 
         const updatedCompany = await Company.findByIdAndUpdate(
             session.companyId,
-            { name, nameLower, country, defaultCurrency },
+            { name, nameLower, country, defaultCurrency, address, branches: parsedBranches, website, taxId, contactEmail, contactPhone },
             { new: true, runValidators: true }
         );
 

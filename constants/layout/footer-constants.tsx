@@ -1,10 +1,4 @@
-import {
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-  LucideIcon,
-} from "lucide-react";
+import { Globe, Send, Camera, Building2, LucideIcon } from "lucide-react";
 
 export interface SocialLink {
   href: string;
@@ -57,22 +51,22 @@ export const footerConfig: FooterConfig = {
   socialLinks: [
     {
       href: "https://facebook.com",
-      icon: Facebook,
+      icon: Globe,
       label: "Facebook",
     },
     {
       href: "https://twitter.com",
-      icon: Twitter,
+      icon: Send,
       label: "Twitter",
     },
     {
       href: "https://instagram.com",
-      icon: Instagram,
+      icon: Camera,
       label: "Instagram",
     },
     {
       href: "https://linkedin.com",
-      icon: Linkedin,
+      icon: Building2,
       label: "LinkedIn",
     },
   ],

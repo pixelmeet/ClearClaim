@@ -24,13 +24,11 @@ export async function GET() {
             status: { $in: [ExpenseStatus.PENDING, ExpenseStatus.SUBMITTED] }
         }).populate('employeeId', 'name email');
 
-        // Fetch flow once (might not exist if they only use rules)
-        const flow = await ApprovalFlow.findOne({ companyId: session.companyId });
-
         const pending = [];
         for (const expense of candidates) {
             // Filter: Can I approve this?
-            const canAct = await canUserActOnExpense(user, expense, flow);
+            // The engine now automatically discovers the flow/rule within canUserActOnExpense
+            const canAct = await canUserActOnExpense(user, expense, null);
             if (canAct) {
                 pending.push(expense);
             }

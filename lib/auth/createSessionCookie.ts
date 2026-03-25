@@ -1,9 +1,7 @@
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { UserRole } from '@/lib/types';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
-const key = new TextEncoder().encode(JWT_SECRET);
+import { getJwtSecretKey } from '@/lib/auth/jwtSecret';
 
 export interface SessionPayload {
   userId: string;
@@ -21,7 +19,7 @@ export async function createSessionCookie(payload: SessionPayload): Promise<void
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h')
-    .sign(key);
+    .sign(getJwtSecretKey());
 
   const cookieStore = await cookies();
   cookieStore.set('auth_token', token, {

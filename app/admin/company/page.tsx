@@ -22,6 +22,12 @@ export default function AdminCompanyPage() {
             name: '',
             country: '',
             defaultCurrency: '',
+            address: '',
+            branches: '',
+            website: '',
+            taxId: '',
+            contactEmail: '',
+            contactPhone: '',
         },
     });
 
@@ -31,11 +37,17 @@ export default function AdminCompanyPage() {
                 const res = await fetch('/api/admin/company');
                 const data = await res.json();
                 if (res.ok) {
-                    form.reset({
-                        name: data.company.name,
-                        country: data.company.country,
-                        defaultCurrency: data.company.defaultCurrency,
-                    });
+                        form.reset({
+                            name: data.company.name || '',
+                            country: data.company.country || '',
+                            defaultCurrency: data.company.defaultCurrency || '',
+                            address: data.company.address || '',
+                            branches: data.company.branches ? data.company.branches.join(', ') : '',
+                            website: data.company.website || '',
+                            taxId: data.company.taxId || '',
+                            contactEmail: data.company.contactEmail || '',
+                            contactPhone: data.company.contactPhone || '',
+                        });
                 } else {
                     toast.error(typeof data.error === 'string' ? data.error : 'Failed to load company settings');
                 }
@@ -146,6 +158,97 @@ export default function AdminCompanyPage() {
                                                 </FormItem>
                                             )}
                                         />
+                                    </div>
+
+                                    <div className="pt-6 mt-6 border-t border-border/50 space-y-6">
+                                        <h3 className="text-lg font-semibold tracking-tight text-foreground">Location & Structure</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="address"
+                                                render={({ field }) => (
+                                                    <FormItem className="md:col-span-2">
+                                                        <FormLabel>Corporate Address</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="123 Enterprise Way, Suite 100, City, State, ZIP" className="bg-background/50" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="branches"
+                                                render={({ field }) => (
+                                                    <FormItem className="md:col-span-2">
+                                                        <FormLabel>Operating Branches</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="New York, London, Tokyo" className="bg-background/50" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription className="text-xs">Comma-separated list of office locations.</FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-6 mt-6 border-t border-border/50 space-y-6">
+                                        <h3 className="text-lg font-semibold tracking-tight text-foreground">Contact & Identity</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="contactEmail"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Official Email</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="email" placeholder="finance@acme.com" className="bg-background/50" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="contactPhone"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Contact Number</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="+1-800-555-0199" className="bg-background/50" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="website"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Company Website</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="url" placeholder="https://acme.com" className="bg-background/50" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="taxId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Tax Identification Number</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="XX-XXXXXXX" className="bg-background/50" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="flex justify-end pt-4 border-t border-border/50">

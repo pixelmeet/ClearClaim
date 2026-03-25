@@ -38,7 +38,11 @@ interface CountryData {
   cca2: string;
 }
 
+import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+
 export default function SignupPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [countries, setCountries] = useState<CountryData[]>([]);
 
@@ -88,15 +92,16 @@ export default function SignupPage() {
       const redirectTo = data.redirectTo || '/dashboard';
       toast.success(
         data.user?.role === 'ADMIN'
-          ? 'Company created successfully!'
+          ? 'Enterprise workspace created successfully!'
           : 'Account created successfully!'
       );
-      window.location.href = redirectTo;
+      router.refresh();
+      router.push(redirectTo);
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error('An unknown error occurred');
+        toast.error('An unexpected error occurred');
       }
     } finally {
       setLoading(false);
@@ -104,72 +109,105 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">
-            Create ClearClaim Account
-          </CardTitle>
-          <CardDescription>
-            Join your company or create a new one. If your company already
-            exists, you&apos;ll join as an employee.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen grid lg:grid-cols-2 font-sans overflow-hidden bg-background">
+      {/* Left Panel: Elite Branding & Narrative */}
+      <div className="hidden lg:flex relative bg-[#020617] items-center justify-center p-12 overflow-hidden">
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-[150px]" />
+          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]" />
+        </div>
+
+        <div className="relative z-10 max-w-lg text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <div className="inline-flex items-center gap-2 mb-8 bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
+              <span className="w-2 h-2 bg-accent rounded-full animate-ping" />
+              <span className="text-white/60 text-sm font-medium tracking-wide">Enterprise Onboarding</span>
+            </div>
+            <h1 className="text-5xl font-bold text-white mb-6 leading-tight tracking-tight">
+              Build a High-Performance <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">FinTech Stack</span>
+            </h1>
+            <p className="text-white/60 text-lg leading-relaxed mb-12">
+              Join the world's most innovative companies using ClearClaim to automate their financial operations.
+            </p>
+            
+            <div className="space-y-4 text-left">
+              {[
+                'Instant AI-powered OCR extraction',
+                'Enterprise-grade RBAC & security',
+                'Seamless ERP integrations',
+              ].map((feature, i) => (
+                <div key={i} className="flex items-center gap-3 text-white/80">
+                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">✓</div>
+                  <span className="font-medium">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Right Panel: Sophisticated Form */}
+      <div className="flex items-center justify-center p-8 lg:p-12 relative overflow-hidden overflow-y-auto">
+        <div className="max-w-xl w-full relative z-10 pb-12">
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight">Create Your Workspace</h2>
+            <p className="text-muted-foreground text-lg">Start your 14-day premium trial today.</p>
+          </div>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Acme Inc." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
-                        </SelectTrigger>
+                        <Input placeholder="Acme Global" className="h-12 bg-muted/30 border-border/50 focus:border-primary rounded-xl" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {countries.map((c) => (
-                          <SelectItem
-                            key={c.cca2}
-                            value={c.name.common}
-                          >
-                            {c.name.common}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Country</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-12 bg-muted/30 border-border/50 focus:border-primary rounded-xl">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countries.map((c) => (
+                            <SelectItem key={c.cca2} value={c.name.common}>{c.name.common}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input placeholder="Johnathan Doe" className="h-12 bg-muted/30 border-border/50 focus:border-primary rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -180,55 +218,55 @@ export default function SignupPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Work Email</FormLabel>
                       <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="john@company.com"
-                          {...field}
-                        />
+                        <Input type="email" placeholder="john@acme.com" className="h-12 bg-muted/30 border-border/50 focus:border-primary rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Min. 6 characters"
-                        {...field}
-                      />
+                      <Input type="password" placeholder="••••••••" className="h-12 bg-muted/30 border-border/50 focus:border-primary rounded-xl" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 flex items-start gap-3">
+                <div className="mt-1 w-2 h-2 rounded-full bg-primary" />
+                <p className="text-primary/80 text-xs leading-relaxed">
+                  By signing up, you agree to our <strong>Enterprise Terms of Service</strong> and <strong>Data Privacy Policy</strong>.
+                </p>
+              </div>
+
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-14 bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition-all duration-300 transform active:scale-[0.98]"
                 disabled={loading}
               >
-                {loading ? 'Creating Account...' : 'Sign Up'}
+                {loading ? 'Creating workspace...' : 'Initialize Enterprise Workspace'}
               </Button>
             </form>
           </Form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
-              Log in
+
+          <p className="mt-10 text-center text-muted-foreground">
+            Operational already?{' '}
+            <Link href="/login" className="text-primary font-bold hover:underline">
+              Sign in to your account
             </Link>
           </p>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import User, { UserRole } from '@/models/User';
@@ -44,25 +45,44 @@ export async function POST(req: NextRequest) {
 
         await connectToDatabase();
 
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({
+            email: email.trim().toLowerCase(),
+            companyId: session.companyId,
+        });
         if (existingUser) {
             return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 });
         }
 
-        // Default password if not provided (demo mode: 'password123')
-        const finalPassword = password || 'password123';
+        const finalPassword =
+            password && password.length >= 6
+                ? password
+                : randomBytes(18).toString('base64url');
         const passwordHash = await bcrypt.hash(finalPassword, 10);
 
         const newUser = await User.create({
             companyId: session.companyId,
             name,
-            email,
+            email: email.trim().toLowerCase(),
             passwordHash,
             role,
-            managerId: (managerId && managerId !== 'none') ? managerId : undefined,
+            managerId: managerId && managerId !== 'none' ? managerId : session.userId,
         });
 
-        return NextResponse.json({ user: newUser });
+        const safeUser = {
+            _id: newUser._id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role,
+            companyId: newUser.companyId,
+            managerId: newUser.managerId,
+        };
+
+        return NextResponse.json({
+            user: safeUser,
+            ...(password && password.length >= 6
+                ? {}
+                : { generatedPassword: finalPassword }),
+        });
 
     } catch (error) {
         console.error('Create user error:', error);

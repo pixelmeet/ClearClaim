@@ -31,6 +31,12 @@ export const UpdateCompanySchema = z.object({
     name: z.string().min(2, "Company name must be at least 2 characters"),
     country: z.string().min(2, "Country is required"),
     defaultCurrency: z.string().length(3, "Currency must be a 3-letter code"),
+    address: z.string().optional(),
+    branches: z.string().optional(),
+    website: z.string().url("Invalid URL format").optional().or(z.literal('')),
+    taxId: z.string().optional(),
+    contactEmail: z.string().email("Invalid email").optional().or(z.literal('')),
+    contactPhone: z.string().optional(),
 });
 
 // --- User ---

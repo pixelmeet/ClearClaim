@@ -5,32 +5,32 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Elegant "Arctic Aurora" Light Mode */
+  /* Elegant "Elite FinTech" Light Mode */
   --background: #F8FAFC;
-  --background-gradient: radial-gradient(circle at 15% 50%, #F1F5F9, #F8FAFC);
+  --background-gradient: radial-gradient(circle at 10% 20%, #F1F5F9, #F8FAFC);
   --foreground: #0F172A;
 
-  --card: rgba(255, 255, 255, 0.7);
+  --card: rgba(255, 255, 255, 0.8);
   --card-foreground: #0F172A;
-  --card-border: rgba(226, 232, 240, 0.8);
+  --card-border: rgba(226, 232, 240, 0.6);
 
   --popover: rgba(255, 255, 255, 0.95);
   --popover-foreground: #0F172A;
 
-  /* Primary: Ocean Blue */
-  --primary: #0284C7;
-  --primary-hover: #0369A1;
-  --primary-foreground: #F8FAFC;
-  --primary-glow: rgba(2, 132, 199, 0.2);
+  /* Primary: Elite Indigo */
+  --primary: #6366F1;
+  --primary-hover: #4F46E5;
+  --primary-foreground: #FFFFFF;
+  --primary-glow: rgba(99, 102, 241, 0.15);
 
-  /* Secondary: Soft Slate */
-  --secondary: #E2E8F0;
-  --secondary-foreground: #0F172A;
+  /* Secondary: Elite Violet / AI Intel */
+  --secondary: #F1F5F9;
+  --secondary-foreground: #475569;
 
-  --muted: #F1F5F9;
+  --muted: #F8FAFC;
   --muted-foreground: #64748B;
 
-  /* Accent: Sapphire / Violet */
+  /* Accent: Electric Violet */
   --accent: #8B5CF6;
   --accent-hover: #7C3AED;
   --accent-foreground: #FFFFFF;
@@ -41,12 +41,12 @@
   --success-foreground: #FFFFFF;
   --warning: #F59E0B;
   --warning-foreground: #FFFFFF;
-  --destructive: #EF4444;
+  --destructive: #F43F5E;
   --destructive-foreground: #FFFFFF;
 
   --border: rgba(226, 232, 240, 0.8);
-  --input: rgba(226, 232, 240, 0.6);
-  --ring: rgba(2, 132, 199, 0.5);
+  --input: rgba(226, 232, 240, 0.5);
+  --ring: #6366F1;
 
   /* Charts */
   --chart-1: #0284C7;
@@ -85,51 +85,50 @@
 }
 
 .dark {
-  /* Deep "Midnight Aurora" Dark Mode */
-  --background: #06080F;
-  /* Deep space gradient */
-  --background-gradient: radial-gradient(circle at top right, #0C1222 0%, #06080F 50%, #0A0A10 100%);
+  /* Premium "Deep Space" Dark Mode */
+  --background: #020617;
+  --background-gradient: radial-gradient(circle at top center, #0F172A, #020617);
   --foreground: #F8FAFC;
 
-  --card: rgba(15, 23, 42, 0.6);
+  --card: rgba(15, 23, 42, 0.8);
   --card-foreground: #F8FAFC;
-  --card-border: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.05);
 
-  --popover: rgba(15, 23, 42, 0.95);
+  --popover: rgba(15, 23, 42, 0.98);
   --popover-foreground: #F8FAFC;
 
-  --primary: #38BDF8;
-  --primary-hover: #7DD3FC;
-  --primary-foreground: #022C22;
-  --primary-glow: rgba(56, 189, 248, 0.25);
+  --primary: #818CF8;
+  --primary-hover: #A5B4FC;
+  --primary-foreground: #020617;
+  --primary-glow: rgba(129, 140, 248, 0.2);
 
-  --secondary: rgba(30, 41, 59, 0.8);
-  --secondary-foreground: #F8FAFC;
+  --secondary: rgba(30, 41, 59, 0.7);
+  --secondary-foreground: #94A3B8;
 
-  --muted: rgba(30, 41, 59, 0.5);
-  --muted-foreground: #94A3B8;
+  --muted: rgba(15, 23, 42, 0.5);
+  --muted-foreground: #64748B;
 
-  --accent: #A78BFA;
-  --accent-hover: #C4B5FD;
-  --accent-foreground: #022C22;
-  --accent-glow: rgba(167, 139, 250, 0.25);
+  --accent: #C4B5FD;
+  --accent-hover: #DDD6FE;
+  --accent-foreground: #020617;
+  --accent-glow: rgba(196, 181, 253, 0.25);
 
   --success: #34D399;
-  --success-foreground: #064E3B;
-  --warning: #FBB040;
-  --warning-foreground: #78350F;
-  --destructive: #F87171;
-  --destructive-foreground: #7F1D1D;
+  --success-foreground: #020617;
+  --warning: #FBBF24;
+  --warning-foreground: #020617;
+  --destructive: #FB7185;
+  --destructive-foreground: #FFFFFF;
 
   --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.05);
-  --ring: rgba(56, 189, 248, 0.5);
+  --input: rgba(255, 255, 255, 0.03);
+  --ring: #818CF8;
 
-  --chart-1: #38BDF8;
-  --chart-2: #A78BFA;
+  --chart-1: #818CF8;
+  --chart-2: #C4B5FD;
   --chart-3: #34D399;
-  --chart-4: #FBB040;
-  --chart-5: #F87171;
+  --chart-4: #FBBF24;
+  --chart-5: #FB7185;
 
   --sidebar: rgba(15, 23, 42, 0.4);
   --sidebar-foreground: #F8FAFC;
@@ -143,13 +142,13 @@
   --radius: 0.75rem;
 
   --shadow-color: 0 0% 0%;
-  --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-color) / 0.5);
-  --shadow: 0 4px 6px -1px hsl(var(--shadow-color) / 0.5), 0 2px 4px -2px hsl(var(--shadow-color) / 0.5);
-  --shadow-md: 0 10px 15px -3px hsl(var(--shadow-color) / 0.5), 0 4px 6px -4px hsl(var(--shadow-color) / 0.5);
-  --shadow-lg: 0 20px 25px -5px hsl(var(--shadow-color) / 0.5), 0 8px 10px -6px hsl(var(--shadow-color) / 0.5);
-  --shadow-xl: 0 25px 50px -12px hsl(var(--shadow-color) / 0.75);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
 
-  --tracking-normal: -0.015em;
+  --tracking-tight: -0.025em;
 }
 
 @theme inline {

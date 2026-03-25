@@ -5,6 +5,12 @@ export interface ICompany extends Document {
     nameLower: string;
     country: string;
     defaultCurrency: string;
+    address?: string;
+    branches?: string[];
+    website?: string;
+    taxId?: string;
+    contactEmail?: string;
+    contactPhone?: string;
     createdAt: Date;
     updatedAt?: Date;
 }
@@ -15,6 +21,12 @@ const CompanySchema = new Schema<ICompany>(
         nameLower: { type: String, required: true, unique: true },
         country: { type: String, required: true },
         defaultCurrency: { type: String, required: true },
+        address: { type: String },
+        branches: [{ type: String }],
+        website: { type: String },
+        taxId: { type: String },
+        contactEmail: { type: String },
+        contactPhone: { type: String },
     },
     { timestamps: true }
 );

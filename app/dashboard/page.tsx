@@ -16,53 +16,7 @@ import {
 /*  Role-specific configuration                                        */
 /* ------------------------------------------------------------------ */
 
-const employeeStats = [
-    {
-        title: 'Total Expenses',
-        value: '$0',
-        icon: DollarSign,
-        gradient: 'from-primary to-primary/70',
-        delay: '100',
-    },
-    {
-        title: 'Pending Approval',
-        value: '0',
-        icon: Clock,
-        gradient: 'from-accent to-accent/70',
-        delay: '200',
-    },
-    {
-        title: 'Approved',
-        value: '0',
-        icon: CheckCircle2,
-        gradient: 'from-success to-success/70',
-        delay: '300',
-    },
-];
-
-const managerStats = [
-    {
-        title: 'Team Expenses',
-        value: '$0',
-        icon: DollarSign,
-        gradient: 'from-primary to-primary/70',
-        delay: '100',
-    },
-    {
-        title: 'Pending Approvals',
-        value: '0',
-        icon: Clock,
-        gradient: 'from-accent to-accent/70',
-        delay: '200',
-    },
-    {
-        title: 'Approved',
-        value: '0',
-        icon: CheckCircle2,
-        gradient: 'from-success to-success/70',
-        delay: '300',
-    },
-];
+// Stats are now calculated dynamically in the component
 
 const employeeActions = [
     {
@@ -118,23 +72,61 @@ const managerActions = [
     },
 ];
 
+import connectToDatabase from '@/lib/db';
+import {
+    getEmployeeExpenseDashboardStats,
+    getManagerTeamExpenseDashboardStats,
+} from '@/lib/services/expenseDashboardStats';
+
 /* ------------------------------------------------------------------ */
 /*  Page Component                                                     */
 /* ------------------------------------------------------------------ */
 
 export default async function DashboardPage() {
     const session = await getSession();
-    const role = session?.role as UserRole | undefined;
+    if (!session) return null;
 
+    await connectToDatabase();
+
+    const role = session.role as UserRole;
     const isManager = role === UserRole.MANAGER;
+    const isAdmin = role === UserRole.ADMIN;
 
-    const heading = isManager ? 'Manager Dashboard' : 'Dashboard';
+    const agg = isManager
+        ? await getManagerTeamExpenseDashboardStats(session.companyId, session.userId)
+        : await getEmployeeExpenseDashboardStats(session.companyId, session.userId);
+
+    const { totalAmount, pendingCount, approvedCount, companyCurrency } = agg;
+
+    const currentStats = [
+        {
+            title: isManager ? 'Team Expenses' : 'Total Expenses',
+            value: `${companyCurrency} ${totalAmount.toLocaleString()}`,
+            icon: DollarSign,
+            gradient: 'from-primary to-primary/70',
+            delayMs: 100,
+        },
+        {
+            title: isManager ? 'Pending Approvals' : 'Pending Approval',
+            value: pendingCount.toString(),
+            icon: Clock,
+            gradient: 'from-accent to-accent/70',
+            delayMs: 200,
+        },
+        {
+            title: 'Approved',
+            value: approvedCount.toString(),
+            icon: CheckCircle2,
+            gradient: 'from-success to-success/70',
+            delayMs: 300,
+        },
+    ];
+
+    const actions = isManager ? managerActions : employeeActions;
+    const heading = isManager ? 'Manager Dashboard' : (isAdmin ? 'Admin Dashboard' : 'Dashboard');
     const subtitle = isManager
         ? "Manage your team's expenses and approvals."
         : "Welcome back! Here's an overview of your claims.";
-
-    const stats = isManager ? managerStats : employeeStats;
-    const actions = isManager ? managerActions : employeeActions;
 
     return (
         <div className="space-y-8 p-4 sm:p-6 md:p-8">
@@ -160,33 +152,38 @@ export default async function DashboardPage() {
 
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {stats.map((stat) => (
+                {currentStats.map((stat) => (
                     <div
                         key={stat.title}
-                        className={`opacity-0 animate-fade-in-up delay-${stat.delay} group cursor-default`}
+                        className="opacity-0 animate-fade-in-up group cursor-default"
+                        style={{ animationDelay: `${stat.delayMs}ms` }}
                     >
                         <div className="relative overflow-hidden rounded-2xl border border-card-border 
-                                      bg-card/60 backdrop-blur-xl p-6 
-                                      hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+                                      bg-card/80 backdrop-blur-xl p-8 
+                                      hover:shadow-2xl hover:shadow-primary/10 hover:scale-[1.02] transition-all duration-500 group">
                             <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 
-                                          group-hover:opacity-5 transition-opacity duration-300`} />
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-medium text-muted-foreground">
+                                          group-hover:opacity-[0.03] transition-opacity duration-500`} />
+                            <div className="relative z-10 text-left">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                                         {stat.title}
                                     </h3>
-                                    <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.gradient} 
-                                                  group-hover:scale-110 transition-transform duration-300`}>
-                                        <stat.icon className="h-5 w-5 text-white" />
+                                    <div className={`p-4 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg shadow-primary/20
+                                                  group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                                        <stat.icon className="h-6 w-6 text-white" />
                                     </div>
                                 </div>
-                                <div className="text-3xl font-bold tracking-tight">
+                                <div className="text-4xl font-extrabold tracking-tight text-foreground">
                                     {stat.value}
                                 </div>
+                                <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground/80">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                                    Live Data
+                                </div>
                             </div>
-                            <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full 
-                                          bg-gradient-to-br ${stat.gradient} opacity-10 blur-2xl
-                                          group-hover:opacity-20 transition-opacity duration-300`} />
+                            <div className={`absolute -bottom-12 -right-12 w-32 h-32 rounded-full 
+                                          bg-gradient-to-br ${stat.gradient} opacity-10 blur-3xl
+                                          group-hover:opacity-30 transition-all duration-700`} />
                         </div>
                     </div>
                 ))}
@@ -200,33 +197,34 @@ export default async function DashboardPage() {
                         <Link
                             key={action.href}
                             href={action.href}
-                            className={`block group opacity-0 animate-fade-in-up delay-${(index + 5) * 100}`}
+                            className="block group opacity-0 animate-fade-in-up"
+                            style={{ animationDelay: `${(index + 5) * 100}ms` }}
                         >
-                            <div className="relative overflow-hidden rounded-xl border border-card-border 
-                                          bg-card/60 backdrop-blur-xl p-6 
-                                          hover:shadow-md hover:border-primary/30 hover:scale-[1.02] transition-all duration-300 h-full">
+                            <div className="relative overflow-hidden rounded-2xl border border-card-border 
+                                          bg-card/80 backdrop-blur-xl p-8 
+                                          hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 hover:scale-[1.03] transition-all duration-500 h-full group">
                                 <div className={`absolute inset-0 bg-gradient-to-r ${action.hoverGradient} 
-                                              opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                                              opacity-0 group-hover:opacity-40 transition-opacity duration-500`} />
                                 <div className="relative z-10">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className={`p-3 rounded-xl bg-gradient-to-br ${action.gradient} shadow-md 
-                                                      group-hover:scale-110 transition-transform duration-300`}>
-                                            <action.icon className="h-5 w-5 text-white" />
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className={`p-4 rounded-xl bg-gradient-to-br ${action.gradient} shadow-lg 
+                                                      group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500`}>
+                                            <action.icon className="h-6 w-6 text-white" />
                                         </div>
-                                        <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 
-                                                             group-hover:opacity-100 group-hover:translate-x-1 
-                                                             transition-all duration-300" />
+                                        <ArrowRight className="h-6 w-6 text-primary opacity-0 
+                                                             group-hover:opacity-100 group-hover:translate-x-2 
+                                                             transition-all duration-500" />
                                     </div>
-                                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors duration-300">
+                                    <h3 className="font-bold text-xl group-hover:text-primary transition-colors duration-300 tracking-tight">
                                         {action.title}
                                     </h3>
-                                    <p className="text-sm text-muted-foreground mt-1.5">
+                                    <p className="text-base text-muted-foreground mt-3 leading-relaxed">
                                         {action.description}
                                     </p>
                                 </div>
-                                <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full 
-                                              bg-gradient-to-br ${action.gradient} opacity-10 blur-2xl 
-                                              group-hover:opacity-20 transition-opacity duration-300`} />
+                                <div className={`absolute -top-12 -left-12 w-32 h-32 rounded-full 
+                                              bg-gradient-to-br ${action.gradient} opacity-[0.03] blur-3xl 
+                                              group-hover:opacity-20 transition-all duration-700`} />
                             </div>
                         </Link>
                     ))}

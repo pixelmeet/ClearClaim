@@ -1,0 +1,89 @@
+﻿[dotenv@17.3.1] injecting env (19) from .env.local -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+Connected to DB
+
+Companies: [
+  {
+    "_id": "69c1847cf64cfc680f172bfe",
+    "name": "ASD Tech",
+    "nameLower": "asd tech",
+    "country": "India",
+    "defaultCurrency": "INR",
+    "createdAt": "2026-03-23T18:20:44.248Z",
+    "updatedAt": "2026-03-23T18:20:44.248Z",
+    "__v": 0
+  }
+]
+
+Users (all): [
+  {
+    "_id": "69c1847cf64cfc680f172c00",
+    "companyId": "69c1847cf64cfc680f172bfe",
+    "name": "Dhruv Savaliya",
+    "email": "dhruvs@gmail.com",
+    "passwordHash": "$2b$10$ppJrngaAM1Oa0z/0t5lYU.h4bW25BOIX.hToRv1deRjDLKWMjULYC",
+    "role": "ADMIN",
+    "isDisabled": false,
+    "createdAt": "2026-03-23T18:20:44.424Z",
+    "updatedAt": "2026-03-23T18:20:44.424Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c1857bf64cfc680f172c09",
+    "companyId": "69c1847cf64cfc680f172bfe",
+    "name": "mansi",
+    "email": "mansi@1234.com",
+    "passwordHash": "$2b$10$08KC9Sjo1RoYJA0zjE6I4OgOJjkcnhy8C4yYgy8ET.I7gnJgqiDg.",
+    "role": "MANAGER",
+    "isDisabled": false,
+    "createdAt": "2026-03-23T18:24:59.166Z",
+    "updatedAt": "2026-03-23T18:24:59.166Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c185c1f64cfc680f172c0d",
+    "companyId": "69c1847cf64cfc680f172bfe",
+    "name": "Renuka Bhati",
+    "email": "renuka@gmail.com",
+    "passwordHash": "$2b$10$ONTGt.Qd8PNayftnbC9NpuD1clgB/Gkk34HwfZpTPELYZr5g.cZDq",
+    "role": "EMPLOYEE",
+    "managerId": "69c1847cf64cfc680f172c00",
+    "isDisabled": false,
+    "createdAt": "2026-03-23T18:26:09.846Z",
+    "updatedAt": "2026-03-23T18:26:09.846Z",
+    "__v": 0
+  }
+]
+
+ApprovalFlows: []
+
+ApprovalRules: [
+  {
+    "_id": "69c186faf64cfc680f172c1d",
+    "organization": "69c1847cf64cfc680f172bfe",
+    "ruleName": "Software Approval",
+    "description": "",
+    "appliesToUser": "69c185c1f64cfc680f172c0d",
+    "manager": "69c1857bf64cfc680f172c09",
+    "isManagerApprover": true,
+    "approverSequence": false,
+    "minApprovalPercent": 60,
+    "approvers": [
+      {
+        "user": "69c1847cf64cfc680f172c00",
+        "required": true,
+        "sequenceNo": 0,
+        "autoApprove": false
+      },
+      {
+        "user": "69c1857bf64cfc680f172c09",
+        "required": true,
+        "sequenceNo": 1,
+        "autoApprove": false
+      }
+    ],
+    "createdAt": "2026-03-23T18:31:22.952Z",
+    "__v": 0
+  }
+]
+
+Expenses (first 2): []

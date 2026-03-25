@@ -11,7 +11,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const publicPaths = ['/login', '/signup', '/api/auth/login', '/api/auth/signup'];
+  const publicPaths = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/api/auth/login',
+    '/api/auth/signup',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/verify-otp',
+    '/api/auth/logout',
+  ];
   if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
@@ -51,6 +62,5 @@ export const config = {
     '/admin/:path*',
     '/manager/:path*',
     '/dashboard/:path*',
-    '/',
   ],
 };

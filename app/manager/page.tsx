@@ -1,11 +1,31 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { CheckCircle, FolderOpen, ArrowRight, TrendingUp, Clock } from 'lucide-react';
+import { CheckCircle, FolderOpen, ArrowRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { getManagerStatusAction } from '@/app/actions/manager-status';
 
 export default function ManagerDashboardPage() {
-  const router = useRouter();
+  const [status, setStatus] = useState<{ hasManager: boolean; isManagerFirstEnabled: boolean } | null>(null);
+
+  useEffect(() => {
+    async function checkStatus() {
+      try {
+        const res = await getManagerStatusAction();
+        if (res.success) {
+          setStatus({
+            hasManager: res.hasManager ?? false,
+            isManagerFirstEnabled: res.isManagerFirstEnabled ?? false,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to check manager status:', error);
+      }
+    }
+    checkStatus();
+  }, []);
+
+  const showWarning = status?.isManagerFirstEnabled && !status?.hasManager;
 
   const cards = [
     {
@@ -40,13 +60,32 @@ export default function ManagerDashboardPage() {
         </p>
       </div>
 
+      {showWarning && (
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/5 backdrop-blur-xl p-6 flex gap-4 items-start animate-fade-in-up border-l-4 border-l-destructive">
+           <div className="p-3 rounded-xl bg-gradient-to-br from-destructive to-destructive/70 shadow-lg shadow-destructive/20 hidden sm:block">
+             <ShieldAlert className="h-6 w-6 text-white" />
+           </div>
+           <div className="space-y-1">
+             <div className="flex items-center gap-2 sm:gap-0">
+               <ShieldAlert className="h-5 w-5 text-destructive sm:hidden" />
+               <h3 className="font-bold text-lg text-destructive">Manager Assignment Required</h3>
+             </div>
+             <p className="text-muted-foreground leading-relaxed">
+               Manager-first approval is enabled for your organization, but you don&apos;t have a manager assigned. 
+               You will not be able to submit expenses until an administrator assigns a manager to your account.
+             </p>
+           </div>
+        </div>
+      )}
+
       {/* Cards Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card, index) => (
           <Link
             key={card.href}
             href={card.href}
-            className={`block group opacity-0 animate-fade-in-up delay-${(index + 1) * 100}`}
+            className="block group opacity-0 animate-fade-in-up"
+            style={{ animationDelay: `${(index + 1) * 100}ms` }}
           >
             <div className="relative overflow-hidden rounded-2xl border border-card-border bg-card/60 backdrop-blur-xl p-6 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 h-full">
               {/* Gradient hover background */}
