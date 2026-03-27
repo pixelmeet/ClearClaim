@@ -7,6 +7,7 @@ export interface IUser extends Document {
     email: string;
     passwordHash: string;
     role: UserRole;
+    department?: string | null;
     managerId?: mongoose.Types.ObjectId;
     delegatedTo?: mongoose.Types.ObjectId | null;
     delegationExpiresAt?: Date | null;
@@ -22,6 +23,7 @@ const UserSchema = new Schema<IUser>(
         email: { type: String, required: true },
         passwordHash: { type: String, required: true },
         role: { type: String, enum: Object.values(UserRole), default: UserRole.EMPLOYEE },
+        department: { type: String, default: null },
         managerId: { type: Schema.Types.ObjectId, ref: 'User' },
         delegatedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         delegationExpiresAt: { type: Date, default: null },

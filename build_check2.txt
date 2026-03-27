@@ -1,0 +1,138 @@
+﻿Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+node.exe : ΓÜá The "middleware" 
+file convention is deprecated. 
+Please use "proxy" instead. Learn 
+more: https://nextjs.org/docs/mess
+ages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : Not 
+   Specified: (ΓÜá The "middle..  
+  .leware-to-proxy:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId : Nat 
+   iveCommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 77s
+  Running TypeScript ...
+Failed to type check.
+
+./models/PolicyRule.ts:89:3
+Type error: Type '{ type: 
+mongoose.Schema<any, 
+mongoose.Model<any, any, any, 
+any, any, any, any>, {}, {}, {}, 
+{}, { _id: false; }, { value: 
+any; field: ConditionField; 
+operator: ConditionOperator; }, 
+mongoose.Document<...> & ... 1 
+more ... & { ...; }, unknown, { 
+...; } & ... 1 more ... & { ...; 
+}>[]; default: never[]; }' is not 
+assignable to type 
+'SchemaDefinitionProperty<any[], 
+IPolicyRule, Document<unknown, 
+{}, IPolicyRule, { id: string; }, 
+DefaultSchemaOptions> & 
+Omit<IPolicyRule & Required<...> 
+& { ...; }, "id"> & { ...; }> | 
+undefined'.
+  Types of property 'type' are 
+incompatible.
+    Type 'Schema<any, Model<any, 
+any, any, any, any, any, any>, 
+{}, {}, {}, {}, { _id: false; }, 
+{ value: any; field: 
+ConditionField; operator: 
+ConditionOperator; }, 
+Document<...> & ... 1 more ... & 
+{ ...; }, unknown, { ...; } & ... 
+1 more ... & { ...; }>[]' is not 
+assignable to type 'typeof Mixed 
+| AnyArray<ObjectIdSchemaDefinitio
+n> | AnyArray<SchemaTypeOptions<Ob
+jectId, IPolicyRule, 
+Document<unknown, {}, 
+IPolicyRule, { ...; }, 
+DefaultSchemaOptions> & Omit<...> 
+& { ...; }>> | undefined'.
+      Type 'Schema<any, 
+Model<any, any, any, any, any, 
+any, any>, {}, {}, {}, {}, { _id: 
+false; }, { value: any; field: 
+ConditionField; operator: 
+ConditionOperator; }, 
+Document<...> & ... 1 more ... & 
+{ ...; }, unknown, { ...; } & ... 
+1 more ... & { ...; }>[]' is not 
+assignable to type 
+'ObjectIdSchemaDefinition[]'.
+        Type 'Schema<any, 
+Model<any, any, any, any, any, 
+any, any>, {}, {}, {}, {}, { _id: 
+false; }, { value: any; field: 
+ConditionField; operator: 
+ConditionOperator; }, 
+Document<...> & ... 1 more ... & 
+{ ...; }, unknown, { ...; } & ... 
+1 more ... & { ...; }>' is not 
+assignable to type 
+'ObjectIdSchemaDefinition'.
+          Type 'Schema<any, 
+Model<any, any, any, any, any, 
+any, any>, {}, {}, {}, {}, { _id: 
+false; }, { value: any; field: 
+ConditionField; operator: 
+ConditionOperator; }, 
+Document<...> & ... 1 more ... & 
+{ ...; }, unknown, { ...; } & ... 
+1 more ... & { ...; }>' is 
+missing the following properties 
+from type 'ObjectId': schemaName, 
+auto, $conditionalHandlers, 
+OptionsConstructor, and 15 more.
+
+  [90m87 |[0m   active:         
+    { [36mtype[0m: 
+[33mBoolean[0m, 
+[36mdefault[0m: [36mtrue[0m },
+  [90m88 |[0m   conditionLogic: 
+    { [36mtype[0m: 
+[33mString[0m, [36menum[0m: [
+33mObject[0m.values([33mConditio
+nLogic[0m), [36mdefault[0m: 
+[33mCondit...[0m
+[31m[1m>[0m [90m89 |[0m   
+conditions:         { 
+[36mtype[0m: 
+[[33mConditionSchema[0m], 
+[36mdefault[0m: [] },
+  [90m   |[0m   [31m[1m^[0m
+  [90m90 |[0m   steps:          
+    { [36mtype[0m: 
+[[33mPolicyStepSchema[0m], 
+[36mdefault[0m: [] },
+  [90m91 |[0m   isDefault:      
+    { [36mtype[0m: 
+[33mBoolean[0m, 
+[36mdefault[0m: [36mfalse[0m 
+},
+  [90m92 |[0m   
+fallbackBehavior:   { 
+[36mtype[0m: [33mString[0m, 
+[36menum[0m: [33mObject[0m.val
+ues([33mFallbackBehavior[0m), 
+[36mdefault[0m: [33mFall...[0m
+Next.js build worker exited with 
+code: 1 and signal: null

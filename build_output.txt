@@ -1,0 +1,59 @@
+﻿Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+node.exe : ΓÜá The "middleware" 
+file convention is deprecated. 
+Please use "proxy" instead. Learn 
+more: https://nextjs.org/docs/mess
+ages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : Not 
+   Specified: (ΓÜá The "middle..  
+  .leware-to-proxy:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId : Nat 
+   iveCommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 86s
+  Running TypeScript ...
+Failed to type check.
+
+./app/dashboard/expenses/[id]/page
+.tsx:13:44
+Type error: Cannot find name 
+'Expense'.
+
+  [90m11 |[0m [36mexport[0m 
+[36mdefault[0m 
+[36mfunction[0m 
+[33mExpenseDetailPage[0m() {
+  [90m12 |[0m     
+[36mconst[0m params = 
+useParams();
+[31m[1m>[0m [90m13 |[0m     
+[36mconst[0m [expense, 
+setExpense] = 
+useState<[33mExpense[0m | 
+[36mnull[0m>([36mnull[0m);
+  [90m   |[0m                   
+                         
+[31m[1m^[0m
+  [90m14 |[0m     
+[36mconst[0m [loading, 
+setLoading] = 
+useState([36mtrue[0m);
+  [90m15 |[0m
+  [90m16 |[0m     useEffect(() 
+=> {
+Next.js build worker exited with 
+code: 1 and signal: null

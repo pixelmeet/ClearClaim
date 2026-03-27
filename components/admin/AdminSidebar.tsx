@@ -28,7 +28,8 @@ const navSections = [
             { href: '/admin/company', label: 'Company Settings', icon: Building },
             { href: '/admin/users', label: 'Users', icon: Users },
             { href: '/admin/expenses', label: 'All Expenses', icon: FileText },
-            { href: '/admin/approval-flows', label: 'Approval Flows', icon: GitBranch },
+            // { href: '/admin/approval-flows', label: 'Approval Flows', icon: GitBranch },
+            { href: '/admin/policy-rules', label: 'Policy Rules', icon: Shield },
         ],
     },
 

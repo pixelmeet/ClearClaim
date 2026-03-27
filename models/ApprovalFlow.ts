@@ -7,6 +7,7 @@ export interface IApprovalStep {
     userId?: mongoose.Types.ObjectId;
     required?: boolean;
     autoApprove?: boolean;
+    label?: string;
 }
 
 export interface IApprovalFlow extends Document {

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Expense from '@/models/Expense';
 import User from '@/models/User';
-import { canUserActOnExpense, getApprovalFlow } from '@/lib/approvalEngine'; // Alias for compatibility or just rename usage
+import { canUserActOnExpense } from '@/lib/approvalEngine';
 import { getSession } from '@/lib/auth';
-import { ExpenseStatus } from '@/lib/types';
+import { ExpenseStatus, UserRole } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
     try {
@@ -36,17 +36,10 @@ export async function GET(req: NextRequest) {
             .sort({ createdAt: -1 });
 
         const pending = [];
-        const flowCache = new Map<string, any>();
         for (const expense of candidates) {
-            const key = expense.category ? String(expense.category) : '__default__';
-            let flow = flowCache.get(key);
-            if (!flow) {
-                flow = await getApprovalFlow(session.companyId.toString(), expense);
-                flowCache.set(key, flow);
-            }
-
-            const canAct = await canUserActOnExpense(user, expense, flow);
-            if (canAct) {
+            // canUserActOnExpense now reads from resolvedChain — no flow lookup needed
+            const canAct = canUserActOnExpense(user, expense);
+            if (canAct || session.role === UserRole.ADMIN) {
                 pending.push(expense);
             }
         }

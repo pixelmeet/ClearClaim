@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ApprovalChainStepper } from '@/components/ApprovalChainStepper';
+import { Expense, ExpenseStatus } from '@/lib/types';
 
 export default function ExpenseDetailPage() {
     const params = useParams();

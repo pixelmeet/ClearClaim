@@ -1,0 +1,113 @@
+﻿Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+node.exe : ΓÜá The "middleware" 
+file convention is deprecated. 
+Please use "proxy" instead. Learn 
+more: https://nextjs.org/docs/mess
+ages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : Not 
+   Specified: (ΓÜá The "middle..  
+  .leware-to-proxy:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId : Nat 
+   iveCommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 80s
+  Running TypeScript ...
+  Finished TypeScript in 62s ...
+  Collecting page data using 7 workers ...
+Cloudinary env vars missing. 
+Ensure CLOUDINARY_CLOUD_NAME, 
+CLOUDINARY_API_KEY, 
+CLOUDINARY_API_SECRET are set.
+  Generating static pages using 7 workers (0/51) ...
+  Generating static pages using 7 workers (12/51) 
+Cloudinary env vars missing. 
+Ensure CLOUDINARY_CLOUD_NAME, 
+CLOUDINARY_API_KEY, 
+CLOUDINARY_API_SECRET are set.
+  Generating static pages using 7 workers (25/51) 
+  Generating static pages using 7 workers (38/51) 
+Γ£ô Generating static pages using 7 workers (51/51) in 4.1s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /admin
+Γö£ ╞Æ /admin/approval-flows
+Γö£ ╞Æ /admin/company
+Γö£ ╞Æ /admin/expenses
+Γö£ ╞Æ /admin/policy-rules
+Γö£ ╞Æ /admin/policy-rules/[id]/edit
+Γö£ ╞Æ /admin/policy-rules/new
+Γö£ ╞Æ /admin/users
+Γö£ Γùï /ai/generate
+Γö£ ╞Æ /api/admin/approval-flows
+Γö£ ╞Æ /api/admin/approval-flows/[id]
+Γö£ ╞Æ /api/admin/company
+Γö£ ╞Æ /api/admin/expenses
+Γö£ ╞Æ /api/admin/expenses/override
+Γö£ ╞Æ /api/admin/policy-rules
+Γö£ ╞Æ /api/admin/policy-rules/[id]
+Γö£ ╞Æ /api/admin/policy-rules/reorder
+Γö£ ╞Æ /api/admin/policy-rules/simulate
+Γö£ ╞Æ /api/admin/users
+Γö£ ╞Æ /api/admin/users/[id]
+Γö£ ╞Æ /api/admin/users/[id]/delegation
+Γö£ ╞Æ /api/admin/users/[id]/status
+Γö£ ╞Æ /api/admin/users/list
+Γö£ ╞Æ /api/ai/generate
+Γö£ ╞Æ /api/auth/forgot-password
+Γö£ ╞Æ /api/auth/login
+Γö£ ╞Æ /api/auth/logout
+Γö£ ╞Æ /api/auth/reset-password
+Γö£ ╞Æ /api/auth/signout
+Γö£ ╞Æ /api/auth/signup
+Γö£ ╞Æ /api/auth/verify-otp
+Γö£ ╞Æ /api/expenses
+Γö£ ╞Æ /api/expenses/[id]
+Γö£ ╞Æ /api/expenses/[id]/actions
+Γö£ ╞Æ /api/expenses/[id]/chain
+Γö£ ╞Æ /api/files/delete
+Γö£ ╞Æ /api/files/delete-folder
+Γö£ ╞Æ /api/files/upload
+Γö£ ╞Æ /api/manager/approvals
+Γö£ ╞Æ /api/manager/approvals/action
+Γö£ ╞Æ /api/manager/approvals/bulk-action
+Γö£ ╞Æ /api/manager/team-expenses
+Γö£ ╞Æ /api/notifications
+Γö£ ╞Æ /api/ocr
+Γö£ ╞Æ /api/ocr/health
+Γö£ ╞Æ /dashboard
+Γö£ ╞Æ /dashboard/expenses
+Γö£ ╞Æ /dashboard/expenses/[id]
+Γö£ ╞Æ /dashboard/expenses/new
+Γö£ Γùï /forgot-password
+Γö£ Γùï /login
+Γö£ ╞Æ /manager
+Γö£ ╞Æ /manager/approvals
+Γö£ ╞Æ /manager/team-expenses
+Γö£ Γùï /notifications
+Γö£ Γùï /reset-password
+Γö£ Γùï /signup
+Γöö ╞Æ /user
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

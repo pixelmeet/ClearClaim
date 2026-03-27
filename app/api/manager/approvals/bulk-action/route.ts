@@ -5,7 +5,7 @@ import { UserRole } from '@/lib/types';
 import { rateLimit } from '@/lib/rateLimit';
 import User from '@/models/User';
 import Expense from '@/models/Expense';
-import { applyApprovalAction, canUserActOnExpense, getApprovalFlow } from '@/lib/approvalEngine';
+import { applyApprovalAction, canUserActOnExpense } from '@/lib/approvalEngine';
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const flow = await getApprovalFlow(session.companyId.toString(), expense);
-        const allowed = await canUserActOnExpense(user, expense, flow);
+        // canUserActOnExpense reads from resolvedChain — no flow lookup needed
+        const allowed = canUserActOnExpense(user, expense);
         if (!allowed && session.role !== UserRole.ADMIN) {
           results.push({ id, success: false, error: 'Not authorized for this expense' });
           continue;
@@ -72,4 +72,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-

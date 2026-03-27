@@ -27,7 +27,43 @@ export enum StepType {
     USER = 'USER',
 }
 
+// ─── Rule Engine Enums ──────────────────────────────────────────────────────
 
+export enum ConditionField {
+    AMOUNT        = 'amount',
+    CATEGORY      = 'category',
+    DEPARTMENT    = 'department',
+    EMPLOYEE_ROLE = 'employeeRole',
+    EMPLOYEE_ID   = 'employeeId',
+    CURRENCY      = 'currency',
+}
+
+export enum ConditionOperator {
+    GT  = 'gt',
+    GTE = 'gte',
+    LT  = 'lt',
+    LTE = 'lte',
+    EQ  = 'eq',
+    NEQ = 'neq',
+    IN  = 'in',
+}
+
+export enum ConditionLogic {
+    AND = 'AND',
+    OR  = 'OR',
+}
+
+export enum StepApproverType {
+    USER    = 'USER',
+    ROLE    = 'ROLE',
+    MANAGER = 'MANAGER',
+}
+
+export enum FallbackBehavior {
+    AUTO_APPROVE = 'AUTO_APPROVE',
+    BLOCK        = 'BLOCK',
+    DEFAULT_FLOW = 'DEFAULT_FLOW',
+}
 
 export enum ActionType {
     APPROVE = 'APPROVE',
@@ -42,6 +78,7 @@ export interface User {
     name: string;
     email: string;
     role: UserRole;
+    department?: string | null;
     managerId?: User | string | null; // Populated or ID
     isDisabled: boolean;
     createdAt?: string | Date;
@@ -62,6 +99,8 @@ export interface Expense {
     expenseDate: string | Date;
     status: ExpenseStatus;
     currentStepIndex: number;
+    policyRuleId?: string | null;
+    resolvedChain?: any[];
     isAutoApproved?: boolean;
     createdAt: string | Date;
     updatedAt: string | Date;

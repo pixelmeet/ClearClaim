@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Expense from '@/models/Expense';
 import User from '@/models/User';
-import { applyApprovalAction, canUserActOnExpense, getApprovalFlow } from '@/lib/approvalEngine';
+import { applyApprovalAction, canUserActOnExpense } from '@/lib/approvalEngine';
 import { getSession } from '@/lib/auth';
 import { ProcessApprovalSchema } from '@/lib/validation';
 import { UserRole } from '@/lib/types';
@@ -40,8 +40,9 @@ export async function POST(req: NextRequest) {
 
         if (!user || !expense) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        const allowed = await canUserActOnExpense(user, expense);
-        if (!allowed) {
+        // Use the new rule-engine-based canUserActOnExpense (synchronous, reads resolvedChain)
+        const allowed = canUserActOnExpense(user, expense);
+        if (!allowed && session.role !== UserRole.ADMIN) {
             return NextResponse.json(
                 { error: 'You are not the current approver for this expense' },
                 { status: 403 }

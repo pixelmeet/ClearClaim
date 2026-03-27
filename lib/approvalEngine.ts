@@ -1,236 +1,229 @@
+// lib/approvalEngine.ts — Rewritten to use PolicyRule-based rule engine
 import User, { IUser, UserRole } from '@/models/User';
 import Expense, { IExpense, ExpenseStatus, IChainStep } from '@/models/Expense';
-import ApprovalFlow, { IApprovalFlow, StepType } from '@/models/ApprovalFlow';
-import ThresholdRule, { IThresholdRule } from '@/models/ThresholdRule';
+import PolicyRule from '@/models/PolicyRule';
 import ApprovalAction, { ActionType } from '@/models/ApprovalAction';
 import Notification, { NotificationType } from '@/models/Notification';
 import { sendApprovalNeededEmail, sendExpenseStatusEmail } from '@/lib/notifications/email';
+import { selectRule, getResolvedChain, canUserActOnExpense as ruleCanUserAct, ResolvedStep } from '@/lib/ruleEngine';
 import mongoose from 'mongoose';
+import connectDB from '@/lib/db';
 
-// ─── Flow Resolution ───────────────────────────────────────
+// Re-export for backward compat
+export { canUserActOnExpense } from '@/lib/ruleEngine';
+
+// ─── Approval Initialization ───────────────────────────────────────────────
 /**
- * Resolution Priority:
- * 1. Flow that matches the expense category
- * 2. Default flow (no category)
+ * initializeApproval — the new entry point.
+ * Uses selectRule() from the rule engine to decide which PolicyRule applies,
+ * snapshots the resolved chain, and advances through auto-approve steps.
  */
-export async function getApprovalFlow(companyId: string, category?: string): Promise<IApprovalFlow | null> {
-    const orgId = companyId.toString();
+export async function initializeApproval(expense: IExpense): Promise<void> {
+    await connectDB();
 
-    // 1. Specific Category
-    if (category) {
-        const flow = await ApprovalFlow.findOne({ companyId: orgId, category }).sort({ createdAt: -1 });
-        if (flow) return flow;
+    const employeeId = (expense.employeeId as any)?._id ?? expense.employeeId;
+    const employee = await User.findById(employeeId.toString());
+    if (!employee) throw new Error('Employee not found');
+
+    // ── Decision layer: which rule applies? ──
+    const result = await selectRule(expense, employee);
+
+    if (result.blocked) {
+        throw new Error(
+            'No approval policy matched this expense and the company has no default rule. Contact your admin.'
+        );
     }
 
-    // 2. Default
-    return await ApprovalFlow.findOne({ 
-        companyId: orgId, 
-        $or: [{ category: null }, { category: { $exists: false } }] 
-    }).sort({ createdAt: -1 });
-}
+    // ── Store the snapshot ──
+    expense.policyRuleId   = result.ruleId ? new mongoose.Types.ObjectId(result.ruleId) : null;
+    expense.resolvedChain  = result.chain as any;
+    expense.isAutoApproved = result.autoApprove;
 
-// ─── Approver Chain Builder ────────────────────────────────
-/**
- * Build a flat sequence of steps (Snapshot).
- * Dynamic rules (thresholds) are injected at the END.
- */
-export async function buildApproverChain(expense: IExpense, flow: IApprovalFlow): Promise<IChainStep[]> {
-    const chain: IChainStep[] = [];
-    let idx = 0;
+    if (result.autoApprove) {
+        // No human approvers needed — auto-approve immediately
+        expense.status = ExpenseStatus.APPROVED;
+        expense.currentStepIndex = 0;
+        await expense.save();
 
-    // 1. Manager Step
-    if (flow.isManagerApprover) {
-        const employee = await User.findById(expense.employeeId);
-        if (employee?.managerId) {
-            chain.push({
-                stepIndex: idx++,
-                approverId: employee.managerId.toString(),
-                role: UserRole.MANAGER,
-                required: true,
-                label: 'Manager Approval'
+        await ApprovalAction.create({
+            expenseId:  expense._id,
+            companyId:  expense.companyId,
+            stepIndex:  0,
+            approverId: employeeId, // system action, attributed to submitter
+            action:     ActionType.APPROVE,
+            comment:    `[AUTO-APPROVED by rule: ${result.ruleName}]`,
+        });
+
+        await _notifyEmployee(expense, 'APPROVED', `Auto-approved by policy: ${result.ruleName}`);
+        return;
+    }
+
+    // Skip any leading autoApprove steps
+    let startIndex = 0;
+    for (const step of result.chain) {
+        if (step.autoApprove) {
+            await ApprovalAction.create({
+                expenseId:  expense._id,
+                companyId:  expense.companyId,
+                stepIndex:  step.stepIndex,
+                approverId: employeeId, // system action
+                action:     ActionType.APPROVE,
+                comment:    '[AUTO-APPROVED step]',
             });
+            startIndex++;
+        } else {
+            break;
         }
     }
 
-    // 2. Flow Steps
-    for (const step of flow.steps) {
-        chain.push({
-            stepIndex: idx++,
-            approverId: step.userId?.toString(),
-            role: step.role,
-            required: step.required,
-            autoApprove: step.autoApprove,
-            label: step.label || (step.role ? `${step.role} Review` : 'User Review')
-        });
-    }
-
-    // 3. Dynamic Threshold Rules
-    const thresholds = await ThresholdRule.find({ 
-        companyId: expense.companyId, 
-        active: true, 
-        minAmount: { $lte: expense.amountCompany } 
-    }).sort({ minAmount: 1 });
-
-    for (const tr of thresholds) {
-        chain.push({
-            stepIndex: idx++,
-            approverId: tr.userId.toString(),
-            required: true,
-            label: tr.label
-        });
-    }
-
-    return chain;
-}
-
-// ─── Approval Initialization ───────────────────────────────
-export async function initializeApproval(expense: IExpense): Promise<void> {
-    const flow = await getApprovalFlow(expense.companyId.toString(), expense.category);
-    if (!flow) throw new Error('No approval flow found for this company/category');
-
-    const chain = await buildApproverChain(expense, flow);
-    if (chain.length === 0) {
-        // Auto-approve if no steps
+    // Check if all steps were auto-approved
+    if (startIndex >= result.chain.length) {
         expense.status = ExpenseStatus.APPROVED;
         expense.isAutoApproved = true;
-    } else {
-        expense.status = ExpenseStatus.PENDING;
-        expense.resolvedChain = chain;
-        expense.currentStepIndex = 0;
-        expense.approvalFlowId = flow._id as mongoose.Types.ObjectId;
-
-        // Skip auto-approve steps at start
-        while (expense.currentStepIndex < chain.length && chain[expense.currentStepIndex].autoApprove) {
-            expense.currentStepIndex++;
-        }
-
-        if (expense.currentStepIndex >= chain.length) {
-            expense.status = ExpenseStatus.APPROVED;
-            expense.isAutoApproved = true;
-        }
+        expense.currentStepIndex = startIndex;
+        await expense.save();
+        await _notifyEmployee(expense, 'APPROVED', `All steps auto-approved by policy: ${result.ruleName}`);
+        return;
     }
 
+    expense.status = ExpenseStatus.PENDING;
+    expense.currentStepIndex = startIndex;
     await expense.save();
-    
-    // Notify first approver
-    if (expense.status === ExpenseStatus.PENDING) {
-        await notifyNextApprover(expense);
-    }
+
+    await _notifyNextApprover(expense, result.chain, startIndex);
 }
 
-// ─── Action Processing ─────────────────────────────────────
+// ─── Action Processing ─────────────────────────────────────────────────────
 export async function applyApprovalAction(
     expense: IExpense,
     user: IUser,
     action: ActionType,
     comment: string
 ): Promise<ExpenseStatus> {
-    const chain = expense.resolvedChain || [];
-    const currentStep = chain[expense.currentStepIndex];
+    await connectDB();
 
-    // 1. Guard
-    if (expense.status !== ExpenseStatus.PENDING) throw new Error('Expense is not in pending state');
-    
-    // Authorization
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isDirectApprover = currentStep?.approverId === user._id.toString();
-    const hasRole = currentStep?.role && user.role === currentStep.role;
-    
-    if (!isAdmin && !isDirectApprover && !hasRole) {
-        throw new Error('You are not authorized to act on this step');
+    if (action === ActionType.REJECT && (!comment || comment.trim().length < 3)) {
+        throw new Error('A comment is required when rejecting an expense');
     }
 
-    // 2. Audit Log
+    const chain = getResolvedChain(expense);
+
+    // Log this action
     await ApprovalAction.create({
-        expenseId: expense._id,
-        companyId: expense.companyId,
+        expenseId:  expense._id,
+        companyId:  expense.companyId,
+        stepIndex:  expense.currentStepIndex,
         approverId: user._id,
         action,
-        comment,
-        stepIndex: expense.currentStepIndex
+        comment:    comment ?? '',
     });
 
-    // 3. Execution logic
-    if (action === ActionType.REJECT) {
+    // REJECTION
+    if (action === ActionType.REJECT || action === ActionType.OVERRIDE_REJECT) {
         expense.status = ExpenseStatus.REJECTED;
         await expense.save();
-        await sendExpenseStatusEmail({
-            to: (await User.findById(expense.employeeId))?.email || '',
-            employeeName: 'Team Member', 
-            status: 'REJECTED',
-            amount: expense.amountOriginal,
-            currency: expense.currencyOriginal,
-            comment
-        });
+        await _notifyEmployee(expense, 'REJECTED', comment);
         return ExpenseStatus.REJECTED;
     }
 
-    // Approve logic
-    expense.currentStepIndex++;
-    
-    // Skip any following auto-approve steps
-    while (expense.currentStepIndex < chain.length && chain[expense.currentStepIndex].autoApprove) {
-        expense.currentStepIndex++;
+    // APPROVAL — check minApprovalPercent if a rule is set
+    if (expense.policyRuleId) {
+        const rule = await PolicyRule.findById(expense.policyRuleId);
+        if (rule && rule.minApprovalPercent > 0) {
+            const approvedCount = await ApprovalAction.countDocuments({
+                expenseId: expense._id,
+                action:    ActionType.APPROVE,
+            });
+            // approvedCount already includes the action we just created
+            const pct = (approvedCount / chain.length) * 100;
+            if (pct >= rule.minApprovalPercent) {
+                expense.status = ExpenseStatus.APPROVED;
+                await expense.save();
+                await _notifyEmployee(expense, 'APPROVED', '');
+                return ExpenseStatus.APPROVED;
+            }
+        }
     }
 
-    if (expense.currentStepIndex >= chain.length) {
-        expense.status = ExpenseStatus.APPROVED;
-    } else {
-        await notifyNextApprover(expense);
-    }
-
-    await expense.save();
-    
-    if (expense.status === ExpenseStatus.APPROVED) {
-        await sendExpenseStatusEmail({
-            to: (await User.findById(expense.employeeId))?.email || '',
-            employeeName: 'Team Member',
-            status: 'APPROVED',
-            amount: expense.amountOriginal,
-            currency: expense.currencyOriginal,
-            comment
+    // Advance to next non-autoApprove step
+    let nextIndex = expense.currentStepIndex + 1;
+    while (nextIndex < chain.length && chain[nextIndex]?.autoApprove) {
+        await ApprovalAction.create({
+            expenseId:  expense._id,
+            companyId:  expense.companyId,
+            stepIndex:  nextIndex,
+            approverId: user._id, // system action attributed to last approver
+            action:     ActionType.APPROVE,
+            comment:    '[AUTO-APPROVED step]',
         });
+        nextIndex++;
     }
 
-    return expense.status;
+    if (nextIndex >= chain.length) {
+        expense.status = ExpenseStatus.APPROVED;
+        await expense.save();
+        await _notifyEmployee(expense, 'APPROVED', '');
+        return ExpenseStatus.APPROVED;
+    }
+
+    expense.currentStepIndex = nextIndex;
+    expense.status = ExpenseStatus.PENDING;
+    await expense.save();
+    await _notifyNextApprover(expense, chain, nextIndex);
+    return ExpenseStatus.PENDING;
 }
 
-// ─── Helpers ───────────────────────────────────────────────
-async function notifyNextApprover(expense: IExpense) {
-    const step = expense.resolvedChain?.[expense.currentStepIndex];
+// ─── Helper: Notify next approver ──────────────────────────────────────────
+async function _notifyNextApprover(expense: IExpense, chain: ResolvedStep[], stepIndex: number) {
+    const step = chain[stepIndex];
     if (!step) return;
 
     let targetEmails: string[] = [];
     if (step.approverId) {
         const u = await User.findById(step.approverId);
         if (u?.email) targetEmails.push(u.email);
-    } else if (step.role) {
-        const users = await User.find({ companyId: expense.companyId, role: step.role });
+    } else if (step.approverRole) {
+        const users = await User.find({ companyId: expense.companyId, role: step.approverRole });
         targetEmails = users.map(u => u.email).filter(Boolean) as string[];
     }
 
     for (const email of targetEmails) {
-        await sendApprovalNeededEmail({
-            to: email,
-            approverName: 'Approver',
-            employeeName: 'Team Member',
-            amount: expense.amountOriginal,
-            currency: expense.currencyOriginal,
-            expenseId: expense._id.toString()
-        });
+        try {
+            await sendApprovalNeededEmail({
+                to: email,
+                approverName: step.label ?? 'Approver',
+                employeeName: 'Team Member',
+                amount: expense.amountOriginal,
+                currency: expense.currencyOriginal,
+                expenseId: expense._id.toString(),
+            });
+        } catch (e) {
+            console.error('Failed to send approval email:', e);
+        }
     }
 }
 
-export async function canUserActOnExpense(user: IUser, expense: IExpense): Promise<boolean> {
-    if (expense.status !== ExpenseStatus.PENDING) return false;
-    if (user.role === UserRole.ADMIN) return true;
+// ─── Helper: Notify employee ───────────────────────────────────────────────
+async function _notifyEmployee(expense: IExpense, status: 'APPROVED' | 'REJECTED', comment: string) {
+    try {
+        const emp = await User.findById(expense.employeeId);
+        if (!emp?.email) return;
+        await sendExpenseStatusEmail({
+            to: emp.email,
+            employeeName: emp.name ?? 'Team Member',
+            status,
+            amount: expense.amountOriginal,
+            currency: expense.currencyOriginal,
+            comment,
+        });
+    } catch (e) {
+        console.error('Failed to send status email:', e);
+    }
+}
 
-    const chain = expense.resolvedChain || [];
-    const currentStep = chain[expense.currentStepIndex];
-    if (!currentStep) return false;
-
-    if (currentStep.approverId === user._id.toString()) return true;
-    if (currentStep.role && user.role === currentStep.role) return true;
-
-    return false;
+// ─── Legacy compat exports ─────────────────────────────────────────────────
+// These are kept for backward compatibility with routes that import from here
+export async function getApprovalFlow(..._args: any[]): Promise<any> {
+    // No-op — kept for import compat. Routes will be updated to remove this.
+    return null;
 }

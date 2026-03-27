@@ -1,0 +1,73 @@
+﻿Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+node.exe : ΓÜá The "middleware" 
+file convention is deprecated. 
+Please use "proxy" instead. Learn 
+more: https://nextjs.org/docs/mess
+ages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : Not 
+   Specified: (ΓÜá The "middle..  
+  .leware-to-proxy:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId : Nat 
+   iveCommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 80s
+  Running TypeScript ...
+Failed to type check.
+
+./models/ApprovalFlow.ts:29:5
+Type error: Object literal may 
+only specify known properties, 
+and 'label' does not exist in 
+type '{ type?: SchemaDefinitionPro
+perty<StepType, IApprovalStep, 
+Document<unknown, {}, 
+IApprovalStep, { id: string; }, 
+DefaultSchemaOptions> & Omit<...> 
+& { ...; }> | undefined; role?: 
+SchemaDefinitionProperty<...> | 
+undefined; userId?: 
+SchemaDefinitionProperty<...> | 
+undefined; required?: 
+SchemaDefinitionProperty<...> | 
+...'.
+
+  [90m27 |[0m     required: { 
+[36mtype[0m: [33mBoolean[0m, 
+[36mdefault[0m: [36mtrue[0m 
+},      [90m// NEW ΓÇö if false, 
+step can be skipped[0m
+  [90m28 |[0m     autoApprove: 
+{ [36mtype[0m: 
+[33mBoolean[0m, 
+[36mdefault[0m: [36mfalse[0m 
+},     [90m// NEW ΓÇö if true, 
+step auto-passes...[0m
+[31m[1m>[0m [90m29 |[0m     
+label: { [36mtype[0m: 
+[33mString[0m, 
+[36mdefault[0m: [36mnull[0m 
+},       [90m// NEW ΓÇö 
+human-readable step name[0m
+  [90m   |[0m     [31m[1m^[0m
+  [90m30 |[0m });
+  [90m31 |[0m
+  [90m32 |[0m [36mconst[0m 
+[33mApprovalFlowSchema[0m = 
+[36mnew[0m [33mSchema[0m<[33m
+IApprovalFlow[0m>(
+Next.js build worker exited with 
+code: 1 and signal: null
