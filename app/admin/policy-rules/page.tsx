@@ -21,6 +21,8 @@ export default function PolicyRulesPage() {
   const [rules, setRules] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -40,6 +42,47 @@ export default function PolicyRulesPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    
+    const newRules = [...rules];
+    const draggedItem = newRules[draggedIndex];
+    newRules.splice(draggedIndex, 1);
+    newRules.splice(index, 0, draggedItem);
+    
+    setRules(newRules);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = async () => {
+    setDraggedIndex(null);
+    setIsUpdatingOrder(true);
+    try {
+      const updatedRules = rules.map((r, i) => ({ ...r, priority: i + 1 }));
+      setRules(updatedRules);
+
+      const orderPayload = updatedRules.map(r => ({ id: r._id, priority: r.priority }));
+      
+      await fetch('/api/admin/policy-rules/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: orderPayload })
+      });
+    } catch (e) {
+      console.error('Failed to update order', e);
+      fetchData();
+    } finally {
+      setIsUpdatingOrder(false);
+    }
+  };
 
   async function toggleActive(id: string, current: boolean) {
     await fetch(`/api/admin/policy-rules/${id}`, {
@@ -130,18 +173,24 @@ export default function PolicyRulesPage() {
           {rules.map((rule, i) => (
             <div
               key={rule._id}
+              draggable={!rule.isDefault && !isUpdatingOrder}
+              onDragStart={(e) => handleDragStart(e, i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDragEnd={handleDragEnd}
               className={`group relative border rounded-2xl p-4 transition-all duration-200 hover:shadow-sm ${
+                draggedIndex === i ? 'opacity-50 scale-[0.98]' : ''
+              } ${
                 rule.isDefault
                   ? 'border-primary/30 bg-primary/[0.03]'
                   : rule.active
-                  ? 'border-border/50 bg-card/40 hover:border-border'
-                  : 'border-border/30 bg-muted/20 opacity-60'
+                  ? 'border-border/50 bg-card/40 hover:border-border cursor-grab active:cursor-grabbing'
+                  : 'border-border/30 bg-muted/20 opacity-60 cursor-grab active:cursor-grabbing'
               }`}
             >
               <div className="flex items-start gap-3">
                 {/* Priority badge */}
                 <div className="flex flex-col items-center gap-1 pt-0.5">
-                  <GripVertical className="h-4 w-4 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                  <GripVertical className="h-4 w-4 text-muted-foreground/40 transition-opacity" />
                   <span className="text-[10px] font-bold text-muted-foreground/60 bg-muted/50 rounded-md px-1.5 py-0.5 min-w-[28px] text-center">
                     #{rule.priority}
                   </span>
@@ -185,7 +234,7 @@ export default function PolicyRulesPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
                   <Link href={`/admin/policy-rules/${rule._id}/edit`}>
                     <button
                       className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"

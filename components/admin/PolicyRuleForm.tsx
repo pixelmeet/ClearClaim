@@ -109,11 +109,14 @@ export default function PolicyRuleForm({ mode, initialData, ruleId }: PolicyRule
         description: description.trim() || null,
         priority,
         conditionLogic,
-        conditions: noConditions ? [] : conditions.filter((c: any) => c.value !== ''),
+        conditions: noConditions ? [] : conditions.filter((c: any) => c.value !== '').map((c: any) => ({
+          ...c,
+          value: NUMERIC_FIELDS.includes(c.field) ? Number(c.value) : c.value,
+        })),
         steps: isDefault && fallbackBehavior === 'AUTO_APPROVE' ? [] : steps.map((s: any) => ({
           ...s,
           approverId:   s.approverType === 'USER' ? (s.approverId || null) : (s.approverType === 'MANAGER' ? (s.approverId || null) : null),
-          approverRole: s.approverType === 'ROLE' ? s.approverRole : null,
+          approverRole: s.approverType === 'ROLE' ? (s.approverRole || null) : null,
         })),
         isDefault,
         fallbackBehavior,
