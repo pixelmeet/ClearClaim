@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
-import Expense from '@/models/Expense';
-import ApprovalAction from '@/models/ApprovalAction';
+import Expense, { ExpenseStatus } from '@/models/Expense';
+import User, { UserRole } from '@/models/User';
+import ApprovalAction, { ActionType } from '@/models/ApprovalAction';
 import { getSession } from '@/lib/auth';
-import { OverrideApprovalSchema } from '@/lib/validation';
-import { UserRole, ActionType, ExpenseStatus } from '@/lib/types';
-import { rateLimit } from '@/lib/rateLimit';
+import { sendExpenseStatusEmail } from '@/lib/notifications/email';
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,53 +13,54 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const rl = rateLimit(`admin-override:${session.userId}`, 20, 60_000);
-        if (!rl.ok) {
-            return NextResponse.json(
-                { error: 'Too many requests' },
-                {
-                    status: 429,
-                    headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) },
-                }
-            );
+        const { expenseId, action, comment } = await req.json();
+
+        if (!expenseId || !action || !comment || comment.length < 5) {
+            return NextResponse.json({ error: 'Expense ID, action, and valid comment (min 5 chars) required' }, { status: 400 });
         }
-
-        const body = await req.json();
-        const result = OverrideApprovalSchema.safeParse(body);
-
-        if (!result.success) {
-            return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
-        }
-
-        const { expenseId, action, comment } = result.data;
 
         await connectToDatabase();
 
         const expense = await Expense.findOne({ _id: expenseId, companyId: session.companyId });
-        if (!expense) {
-            return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
-        }
+        if (!expense) return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
 
-        // Apply override
-        const status = action === ActionType.OVERRIDE_APPROVE ? ExpenseStatus.APPROVED : ExpenseStatus.REJECTED;
-
-        expense.status = status;
-        await expense.save();
-
-        // Log Action
+        // Force transition
+        const newStatus = action === 'APPROVE' ? ExpenseStatus.APPROVED : ExpenseStatus.REJECTED;
+        expense.status = newStatus;
+        
+        // Audit log for the override
         await ApprovalAction.create({
-            expenseId,
-            companyId: session.companyId,
-            stepIndex: expense.currentStepIndex, // Current step when override happened
+            expenseId: expense._id,
+            companyId: expense.companyId,
             approverId: session.userId,
-            action,
-            comment,
+            action: action === 'APPROVE' ? ActionType.APPROVE : ActionType.REJECT,
+            comment: `[ADMIN OVERRIDE] ${comment}`,
+            stepIndex: expense.currentStepIndex
         });
 
-        return NextResponse.json({ success: true, expense });
+        await expense.save();
+
+        // Notify submitter
+        try {
+            const employee = await User.findById(expense.employeeId).select('name email');
+            if (employee?.email) {
+                await sendExpenseStatusEmail({
+                    to: employee.email,
+                    employeeName: employee.name,
+                    status: newStatus,
+                    amount: expense.amountOriginal,
+                    currency: expense.currencyOriginal,
+                    comment: `Admin has manually ${action.toLowerCase()}ed this expense.`
+                });
+            }
+        } catch (e) {
+            console.error('Email notification failed:', e);
+        }
+
+        return NextResponse.json({ success: true, status: newStatus });
 
     } catch (error) {
-        console.error('Override error:', error);
+        console.error('Admin Override error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

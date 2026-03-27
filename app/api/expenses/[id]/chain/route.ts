@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
-import ApprovalAction from '@/models/ApprovalAction';
+import Expense from '@/models/Expense';
 import { getSession } from '@/lib/auth';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -12,14 +12,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         const expenseId = id;
         await connectToDatabase();
 
-        const actions = await ApprovalAction.find({ expenseId, companyId: session.companyId })
-            .populate('approverId', 'name image email') // Important for the timeline UI
-            .sort({ stepIndex: 1, createdAt: 1 });
+        const expense = await Expense.findOne({ _id: expenseId, companyId: session.companyId });
+        if (!expense) return NextResponse.json({ error: 'NotFound' }, { status: 404 });
 
-        return NextResponse.json(actions);
+        return NextResponse.json(expense.resolvedChain || []);
 
     } catch (error) {
-        console.error('Audit trail error:', error);
+        console.error('Chain snapshot error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

@@ -24,11 +24,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { ExpenseStatus, ActionType, Expense } from '@/lib/types';
 import { toast } from 'sonner';
 
+import { ApprovalChainStepper } from '@/components/ApprovalChainStepper';
+
 export default function AdminExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-    const [overrideAction, setOverrideAction] = useState<ActionType | null>(null);
+    const [viewingDetails, setViewingDetails] = useState<Expense | null>(null);
+    const [overrideAction, setOverrideAction] = useState<'APPROVE' | 'REJECT' | null>(null);
     const [comment, setComment] = useState('');
 
     const fetchExpenses = useCallback(async () => {
@@ -48,8 +51,8 @@ export default function AdminExpensesPage() {
     }, [fetchExpenses]);
 
     const handleOverride = async () => {
-        if (!comment) {
-            toast.error('Comment is required for overrides');
+        if (!comment || comment.length < 5) {
+            toast.error('Comment (min 5 chars) is required for overrides');
             return;
         }
 
@@ -65,16 +68,36 @@ export default function AdminExpensesPage() {
             });
 
             if (res.ok) {
-                toast.success('Override applied');
+                toast.success('Override applied successfully');
                 setOverrideAction(null);
                 setSelectedExpense(null);
                 setComment('');
                 fetchExpenses();
             } else {
-                toast.error('Failed to apply override');
+                const err = await res.json();
+                toast.error(err.error || 'Failed to apply override');
             }
         } catch {
             toast.error('Error applying override');
+        }
+    };
+
+    const handleRegularAction = async (expenseId: string, action: 'APPROVE' | 'REJECT') => {
+        try {
+            const res = await fetch('/api/manager/approvals/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expenseId, action, comment: 'Admin Approval' }),
+            });
+            if (res.ok) {
+                toast.success(`Expense ${action.toLowerCase()}ed`);
+                fetchExpenses();
+            } else {
+                const err = await res.json();
+                toast.error(err.error || 'Action failed');
+            }
+        } catch {
+            toast.error('Error processing action');
         }
     };
 
@@ -168,34 +191,40 @@ export default function AdminExpensesPage() {
                                                 {new Date(expense.expenseDate).toLocaleDateString()}
                                             </TableCell>
                                             <TableCell>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => setViewingDetails(expense)}
+                                                        className="hover:bg-primary/10 transition-colors"
+                                                    >
+                                                        Details
+                                                    </Button>
                                                 {expense.status === ExpenseStatus.PENDING && (
-                                                    <div className="flex gap-2">
+                                                    <>
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
                                                             onClick={() => {
                                                                 setSelectedExpense(expense);
-                                                                setOverrideAction(ActionType.OVERRIDE_APPROVE);
+                                                                setOverrideAction('APPROVE');
                                                             }}
                                                             className="hover:bg-success/10 hover:text-success hover:border-success/30 
                                                                      transition-all duration-300"
                                                         >
-                                                            Approve
+                                                            Override
                                                         </Button>
                                                         <Button
                                                             size="sm"
-                                                            variant="outline"
-                                                            onClick={() => {
-                                                                setSelectedExpense(expense);
-                                                                setOverrideAction(ActionType.OVERRIDE_REJECT);
-                                                            }}
-                                                            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30
-                                                                     transition-all duration-300"
+                                                            variant="secondary"
+                                                            onClick={() => handleRegularAction(expense._id, 'APPROVE')}
+                                                            className="hover:shadow-md transition-all"
                                                         >
-                                                            Reject
+                                                            Act as Approver
                                                         </Button>
-                                                    </div>
+                                                    </>
                                                 )}
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -206,43 +235,89 @@ export default function AdminExpensesPage() {
                 </CardContent>
             </Card>
 
-            {/* Override Dialog with animations */}
+            {/* Override Dialog */}
             <Dialog open={!!selectedExpense} onOpenChange={(open) => !open && setSelectedExpense(null)}>
                 <DialogContent className="bg-card/95 backdrop-blur-xl border-card-border">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold">Override Expense</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold uppercase tracking-tight">Force Administrative Action</DialogTitle>
                         <DialogDescription className="text-base">
-                            Force <span className="font-semibold text-foreground">
-                                {overrideAction === ActionType.OVERRIDE_APPROVE ? 'APPROVE' : 'REJECT'}
-                            </span> this expense?
-                            This action will be logged.
+                            Force <span className={`font-black ${overrideAction === 'APPROVE' ? 'text-green-500' : 'text-red-500'}`}>
+                                {overrideAction}
+                            </span> this transaction? This bypasses the remaining workflow steps.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <Textarea
-                            placeholder="Reason for override..."
+                            placeholder="Reason for administrative override (minimum 5 characters)..."
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            className="min-h-[100px] bg-background/50 border-card-border focus:border-primary/50 
-                                     transition-colors duration-300"
+                            className="min-h-[120px] bg-background/50 border-card-border focus:border-primary/50 
+                                     transition-colors duration-300 rounded-2xl p-4 font-medium"
                         />
                     </div>
                     <DialogFooter className="gap-2">
                         <Button
                             variant="ghost"
                             onClick={() => setSelectedExpense(null)}
-                            className="hover:bg-muted"
+                            className="hover:bg-muted font-bold uppercase tracking-widest text-[10px]"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleOverride}
-                            className="bg-gradient-to-r from-primary to-primary-hover hover:shadow-lg 
-                                     hover:scale-105 transition-all duration-300"
+                            disabled={comment.length < 5}
+                            className="bg-foreground text-background hover:bg-foreground/90 font-black uppercase tracking-widest text-[10px] px-8"
                         >
-                            Confirm Override
+                            Authorize Override
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Detail Dialog */}
+            <Dialog open={!!viewingDetails} onOpenChange={(open) => !open && setViewingDetails(null)}>
+                <DialogContent className="max-w-3xl bg-card/95 backdrop-blur-2xl border-card-border rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
+                    {viewingDetails && (
+                        <div className="flex flex-col h-full max-h-[85vh]">
+                            <div className="p-8 border-b border-card-border/50 bg-primary/[0.02]">
+                                <DialogTitle className="text-3xl font-black tracking-tighter">Transaction Audit Portfolio</DialogTitle>
+                                <DialogDescription className="text-[10px] font-black uppercase tracking-[0.2em] mt-2 opacity-60">
+                                    ID: {viewingDetails._id}
+                                </DialogDescription>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Employee</p>
+                                        <p className="text-lg font-bold">{viewingDetails.employeeId?.name}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount</p>
+                                        <p className="text-lg font-black">{viewingDetails.currencyOriginal} {viewingDetails.amountOriginal}</p>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 rounded-3xl bg-muted/20 border border-card-border/30">
+                                    <ApprovalChainStepper 
+                                        expenseId={viewingDetails._id} 
+                                        currentStepIndex={viewingDetails.currentStepIndex} 
+                                        status={viewingDetails.status} 
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="p-8 border-t border-card-border/50 bg-background/50">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setViewingDetails(null)}
+                                    className="rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                                >
+                                    Close Portfolio
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

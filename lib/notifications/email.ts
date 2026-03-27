@@ -14,12 +14,16 @@ export async function sendApprovalNeededEmail(opts: {
   currency: string;
   expenseId: string;
 }) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to: opts.to,
-    subject: `Action required: expense approval for ${opts.employeeName}`,
-    text: `Hi ${opts.approverName},\n\n${opts.employeeName} submitted an expense of ${opts.currency} ${opts.amount} that requires your approval.\n\nView it at: ${process.env.NEXT_PUBLIC_BASE_URL}/manager/approvals\n`,
-  });
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: opts.to,
+      subject: `Action required: expense approval for ${opts.employeeName}`,
+      text: `Hi ${opts.approverName},\n\n${opts.employeeName} submitted an expense of ${opts.currency} ${opts.amount} that requires your approval.\n\nView it at: ${process.env.NEXT_PUBLIC_BASE_URL}/manager/approvals\n`,
+    });
+  } catch (error) {
+    console.error('Email Notification Failed (Approval Needed):', error);
+  }
 }
 
 export async function sendExpenseStatusEmail(opts: {
@@ -31,11 +35,15 @@ export async function sendExpenseStatusEmail(opts: {
   comment?: string;
 }) {
   const verb = opts.status === 'APPROVED' ? 'approved' : 'rejected';
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to: opts.to,
-    subject: `Your expense has been ${verb}`,
-    text: `Hi ${opts.employeeName},\n\nYour expense of ${opts.currency} ${opts.amount} has been ${verb}.\n${opts.comment ? `Comment: ${opts.comment}` : ''}\n`,
-  });
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: opts.to,
+      subject: `Your expense has been ${verb}`,
+      text: `Hi ${opts.employeeName},\n\nYour expense of ${opts.currency} ${opts.amount} has been ${verb}.\n${opts.comment ? `Comment: ${opts.comment}` : ''}\n`,
+    });
+  } catch (error) {
+    console.error('Email Notification Failed (Status Update):', error);
+  }
 }
 

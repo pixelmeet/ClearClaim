@@ -40,8 +40,7 @@ export async function POST(req: NextRequest) {
 
         if (!user || !expense) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        const flow = await getApprovalFlow(session.companyId.toString(), expense);
-        const allowed = await canUserActOnExpense(user, expense, flow);
+        const allowed = await canUserActOnExpense(user, expense);
         if (!allowed) {
             return NextResponse.json(
                 { error: 'You are not the current approver for this expense' },

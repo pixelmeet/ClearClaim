@@ -24,15 +24,16 @@ const ApprovalStepSchema = new Schema<IApprovalStep>({
     type: { type: String, enum: Object.values(StepType), required: true },
     role: { type: String, enum: Object.values(UserRole) },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
-    required: { type: Boolean, default: false },
-    autoApprove: { type: Boolean, default: false },
+    required: { type: Boolean, default: true },      // NEW — if false, step can be skipped
+    autoApprove: { type: Boolean, default: false },     // NEW — if true, step auto-passes on init
+    label: { type: String, default: null },       // NEW — human-readable step name
 });
 
 const ApprovalFlowSchema = new Schema<IApprovalFlow>(
     {
         companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
         name: { type: String, required: true, trim: true },
-        category: {
+        category: {                                // NEW — null means "default flow"
             type: String,
             enum: [...Object.values(ExpenseCategory), null],
             default: null,

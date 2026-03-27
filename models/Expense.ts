@@ -1,6 +1,15 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ExpenseCategory, ExpenseStatus } from '@/lib/types';
 
+export interface IChainStep {
+    stepIndex: number;
+    approverId?: string;
+    role?: string;
+    required?: boolean;
+    autoApprove?: boolean;
+    label?: string;
+}
+
 export interface IExpense extends Document {
     companyId: mongoose.Types.ObjectId;
     employeeId: mongoose.Types.ObjectId;
@@ -18,7 +27,8 @@ export interface IExpense extends Document {
     expenseDate: Date;
     status: ExpenseStatus;
     currentStepIndex: number;
-    isAutoApproved?: boolean;
+    resolvedChain?: IChainStep[]; // NEW — Snapshot of steps for this expense
+    isAutoApproved?: boolean;     // NEW — Track if system approved it
     createdAt: Date;
     updatedAt: Date;
 }
@@ -41,6 +51,7 @@ const ExpenseSchema = new Schema<IExpense>(
         expenseDate: { type: Date, required: true },
         status: { type: String, enum: Object.values(ExpenseStatus), default: ExpenseStatus.DRAFT },
         currentStepIndex: { type: Number, default: 0 },
+        resolvedChain: { type: [Object], default: [] }, // NEW — Snapshot of steps
         isAutoApproved: { type: Boolean, default: false },
     },
     { timestamps: true }
