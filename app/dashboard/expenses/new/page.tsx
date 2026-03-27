@@ -117,7 +117,7 @@ export default function NewExpensePage() {
         if (!receiptFile) return;
 
         setOcrLoading(true);
-        toast.info('Analyzing receipt...');
+        toast.info('Analyzing receipt with Smart OCR...');
 
         try {
             const formData = new FormData();
@@ -130,18 +130,10 @@ export default function NewExpensePage() {
 
             if (!res.ok) {
                 const data = await res.json();
-                if (res.status === 503 || data.error?.includes('quota is 0')) {
-                    throw new Error(data.error || 'OCR is currently unavailable. Please enter details manually.');
-                }
                 throw new Error(data.error || 'Failed to analyze receipt');
             }
 
             const data = await res.json();
-
-            if (data.note === 'Gemini unavailable') {
-                toast.warning('OCR is currently unavailable. Please enter details manually.');
-                return;
-            }
 
             if (data.amount && data.amount !== 'N/A') {
                 form.setValue('amountOriginal', Number(data.amount));
@@ -177,7 +169,8 @@ export default function NewExpensePage() {
                 }
             }
 
-            toast.success('Receipt analyzed and form auto-filled!');
+            const providerName = data.provider === 'groq' ? 'Groq AI' : 'Gemini AI';
+            toast.success(`Receipt analyzed successfully via ${providerName}!`);
         } catch (error: unknown) {
             toast.error(error instanceof Error ? error.message : 'Error parsing receipt');
         } finally {

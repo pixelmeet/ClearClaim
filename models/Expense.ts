@@ -4,6 +4,7 @@ import { ExpenseCategory, ExpenseStatus } from '@/lib/types';
 export interface IExpense extends Document {
     companyId: mongoose.Types.ObjectId;
     employeeId: mongoose.Types.ObjectId;
+    approvalFlowId?: mongoose.Types.ObjectId;
     amountOriginal: number;
     currencyOriginal: string;
     amountCompany: number;
@@ -26,6 +27,7 @@ const ExpenseSchema = new Schema<IExpense>(
     {
         companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
         employeeId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        approvalFlowId: { type: Schema.Types.ObjectId, ref: 'ApprovalFlow' },
         amountOriginal: { type: Number, required: true },
         currencyOriginal: { type: String, required: true },
         amountCompany: { type: Number, required: true },

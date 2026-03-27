@@ -1,0 +1,2 @@
+Testing: meta-llama/llama-4-scout-17b-16e-instruct
+FAILED for model: meta-llama/llama-4-scout-17b-16e-instruct ERROR: Image must have at least 2 pixels in each dimension

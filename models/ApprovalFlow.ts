@@ -55,19 +55,18 @@ ApprovalFlowSchema.index({ companyId: 1, name: 1 }, { unique: true });
 ApprovalFlowSchema.index({ companyId: 1, category: 1 });
 
 // Pre-save validation: required + autoApprove cannot both be true
-ApprovalFlowSchema.pre('save', function (next) {
+ApprovalFlowSchema.pre('save', function () {
     for (const step of this.steps) {
         if (step.required && step.autoApprove) {
-            return next(new Error('A step cannot be both required and autoApprove.'));
+            throw new Error('A step cannot be both required and autoApprove.');
         }
         if (step.type === StepType.USER && !step.userId) {
-            return next(new Error('USER step must have a userId.'));
+            throw new Error('USER step must have a userId.');
         }
         if (step.type === StepType.ROLE && !step.role) {
-            return next(new Error('ROLE step must have a role.'));
+            throw new Error('ROLE step must have a role.');
         }
     }
-    next();
 });
 
 const ApprovalFlow: Model<IApprovalFlow> = mongoose.models.ApprovalFlow || mongoose.model<IApprovalFlow>('ApprovalFlow', ApprovalFlowSchema);

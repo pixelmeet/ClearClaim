@@ -73,14 +73,14 @@ export const CreateExpenseSchema = z.object({
     category: z.nativeEnum(ExpenseCategory),
     description: z.string().min(5),
     expenseDate: z.string().or(z.date()), // API might send string
-    receiptUrl: z.string().url().nullable().optional(),
+    receiptUrl: z.string().nullable().optional(),
 });
 
 export const UpdateExpenseSchema = z.object({
     description: z.string().min(1).optional(),
     category: z.nativeEnum(ExpenseCategory).optional(),
     expenseDate: z.string().or(z.date()).optional(),
-    receiptUrl: z.string().url().nullable().optional(),
+    receiptUrl: z.string().nullable().optional(),
 });
 
 // --- Approval Flow ---

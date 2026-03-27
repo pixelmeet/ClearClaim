@@ -91,6 +91,7 @@ export async function initializeApproval(expense: IExpense): Promise<void> {
     if (!flow) {
         throw new Error(`No approval flow found for organization: ${expense.companyId}`);
     }
+    expense.approvalFlowId = flow._id;
 
     // If manager-first is required, check that employee has a manager
     if (flow.isManagerApprover) {
@@ -215,7 +216,12 @@ export async function canUserActOnExpense(user: IUser, expense: IExpense, flow: 
     // If no flow was provided, try to discover it
     let activeFlow = flow;
     if (!activeFlow) {
-        activeFlow = await getApprovalFlow(expense.companyId.toString(), expense);
+        if (expense.approvalFlowId) {
+            activeFlow = await ApprovalFlow.findById(expense.approvalFlowId);
+        }
+        if (!activeFlow) {
+            activeFlow = await getApprovalFlow(expense.companyId.toString(), expense);
+        }
     }
 
     // Flow/Chain-based routing
@@ -266,7 +272,13 @@ export async function applyApprovalAction(
     action: ActionType,
     comment: string
 ): Promise<ExpenseStatus> {
-    const flow = await getApprovalFlow(expense.companyId.toString(), expense);
+    let flow = null;
+    if (expense.approvalFlowId) {
+        flow = await ApprovalFlow.findById(expense.approvalFlowId);
+    }
+    if (!flow) {
+        flow = await getApprovalFlow(expense.companyId.toString(), expense);
+    }
     if (!flow) throw new Error(`No approval flow found for expense: ${expense._id}`);
 
     // Security: verify user can act
@@ -349,16 +361,6 @@ export async function applyApprovalAction(
         const approvedPercent = (approvedStepIndices.size / chain.length) * 100;
         if (approvedPercent >= minPercent) {
             canAutoComplete = true;
-        }
-    }
-
-    // CRITICAL: Cannot auto-complete if required steps are still pending
-    if (canAutoComplete) {
-        const pendingRequired = chain.filter(
-            (s) => s.required && !approvedStepIndices.has(s.stepIndex)
-        );
-        if (pendingRequired.length > 0) {
-            canAutoComplete = false; // Cannot bypass required steps!
         }
     }
 

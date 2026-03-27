@@ -33,6 +33,51 @@ async function limitConcurrency<T>(fn: () => Promise<T>): Promise<T> {
     }
 }
 
+// ─── Groq Extraction Helper ──────────────────────────────────────────────────
+async function extractWithGroq(base64Data: string, mimeType: string): Promise<string> {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey || apiKey === 'your_groq_api_key_here') {
+        throw new Error('GROQ_API_KEY is missing or not configured');
+    }
+
+    const prompt = "Analyze this receipt or expense document image and extract the following information. Return ONLY valid JSON. The JSON object must have these exact fields: 'amount' (string, remove currency symbols), 'currency' (e.g., 'USD', 'EUR'), 'description' (detailed description), 'category' (map to 'Food', 'Travel', 'Office', 'Software', 'Training', or 'Other'), 'date' (dd/mm/yyyy), and 'merchant'. If any information cannot be extracted, use 'N/A'.";
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+            messages: [
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        {
+                            type: 'image_url',
+                            image_url: {
+                                url: `data:${mimeType};base64,${base64Data}`,
+                            },
+                        },
+                    ],
+                },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(`Groq API error: ${error.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
+
 // ─── Quota Check Helper ─────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function detectQuotaZero(err: any): boolean {
@@ -57,54 +102,32 @@ function detectQuotaZero(err: any): boolean {
     return false;
 }
 
-// ─── Retry Helper with Exponential Backoff ──────────────────────────────────────
-async function generateWithRetry(
+// ─── Retry Helper with Exponential Backoff (Gemini) ─────────────────────────────
+async function generateWithGemini(
     model: ReturnType<InstanceType<typeof GoogleGenerativeAI>['getGenerativeModel']>,
     parts: Parameters<typeof model.generateContent>[0],
-    maxRetries = 5
+    maxRetries = 3
 ) {
-    let delay = 1000; // start with 1 second
+    let delay = 1000;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             const result = await model.generateContent(parts);
-            if (attempt > 0) {
-                console.log(`[OCR] Gemini request succeeded on attempt ${attempt + 1}`);
-            }
-            return result;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return result.response.text();
         } catch (error: any) {
             const status = error?.status || error?.response?.status || error?.httpStatusCode;
             const isQuotaZero = status === 429 && detectQuotaZero(error);
 
-            if (isQuotaZero) {
-                console.error('[OCR] Quota is 0. Aborting retries.');
-                const e = new Error('Gemini API quota is 0 for this project/region.');
-                throw Object.assign(e, {
-                    customStatus: 503,
-                    isQuotaZero: true,
-                    customMessage: 'Gemini API quota is 0 for this project/region. Enable billing or request quota in Google Cloud / AI Studio.'
-                });
-            }
+            if (isQuotaZero) throw Object.assign(new Error('Quota exceeded'), { isQuotaZero: true, status: 503 });
+            if (status !== 429 || attempt === maxRetries) throw error;
 
-            const totalAttempts = maxRetries + 1;
-
-            if (status !== 429 || attempt === maxRetries) {
-                console.error(`[OCR] Gemini request failed permanently after ${attempt + 1}/${totalAttempts}. Status: ${status || 'unknown'}`);
-                throw error;
-            }
-
-            // Respect Retry-After header if present
-            const retryAfter = error?.response?.headers?.get?.('retry-after')
-                || error?.headers?.['retry-after'];
+            const retryAfter = error?.response?.headers?.get?.('retry-after') || error?.headers?.['retry-after'];
             const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : delay;
-
-            console.warn(`[OCR] Rate limited (429). Attempt ${attempt + 1}/${totalAttempts}. Retrying in ${waitTime}ms...`);
-
             await new Promise((res) => setTimeout(res, waitTime));
-            delay *= 2; // exponential backoff
+            delay *= 2;
         }
     }
+    throw new Error('Gemini generation failed after multiple retries.'); // Should not be reached if maxRetries is handled
 }
 
 // ─── POST Handler ───────────────────────────────────────────────────────────────
@@ -113,122 +136,67 @@ export async function POST(req: NextRequest) {
         const session = await getSession();
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!process.env.GEMINI_API_KEY) {
-            return NextResponse.json(
-                { error: 'GEMINI_API_KEY environment variable is missing' },
-                { status: 500 }
-            );
-        }
-
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
-
-        if (!file) {
-            return NextResponse.json({ error: 'No image file uploaded' }, { status: 400 });
+        if (!file || !file.type.startsWith('image/')) {
+            return NextResponse.json({ error: 'Valid image file is required' }, { status: 400 });
         }
 
-        if (!file.type.startsWith('image/')) {
-            return NextResponse.json({ error: 'Uploaded file must be an image' }, { status: 400 });
-        }
-
-        const MAX_BYTES = 4 * 1024 * 1024; // 4MB
-        if (file.size > MAX_BYTES) {
-            return NextResponse.json({ error: 'Image too large. Please upload a smaller photo.' }, { status: 413 });
-        }
-
-        // Convert the image to base64
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const base64Data = buffer.toString('base64');
+        const mimeType = file.type;
 
-        const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const primaryProvider = process.env.OCR_PROVIDER || 'gemini';
+        let responseText: string | undefined;
+        let usedProvider = primaryProvider;
 
-        const prompt = "Analyze this receipt or expense document image and extract the following information. Return ONLY valid minified JSON. No markdown, no code fences. The JSON object must have these exact fields: 'amount' (string, remove currency symbols), 'currency' (e.g., 'USD', 'EUR'), 'description' (detailed description), 'category' (map to 'Food', 'Travel', 'Office', 'Software', 'Training', or 'Other'), 'date' (dd/mm/yyyy), and 'merchant'. If any information cannot be extracted, use 'N/A'.";
-
-        const imageParts = [
-            {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: file.type,
-                },
-            },
-        ];
-
-        // Use concurrency limiter + retry with exponential backoff
-        const result = await limitConcurrency(() =>
-            generateWithRetry(model, [prompt, ...imageParts])
-        );
-
-        if (!result) {
-            console.error('[OCR] generateWithRetry returned undefined after all retries.');
-            return NextResponse.json(
-                { error: 'OCR service temporarily unavailable. Please try again shortly.' },
-                { status: 503 }
-            );
-        }
-
-        const responseText = result.response.text();
-
-        // Extract JSON from the markdown code block if present
-        let jsonString = responseText;
-        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch) {
-            jsonString = jsonMatch[1];
-        } else {
-            const rawJsonMatch = responseText.match(/{[\s\S]*}/);
-            if (rawJsonMatch) {
-                jsonString = rawJsonMatch[0];
+        try {
+            if (primaryProvider === 'groq') {
+                responseText = await limitConcurrency(() => extractWithGroq(base64Data, mimeType));
+            } else {
+                const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
+                const prompt = "Analyze this receipt and return JSON with amount, currency, description, category, date, and merchant.";
+                responseText = await limitConcurrency(() => generateWithGemini(model, [prompt, { inlineData: { data: base64Data, mimeType } }]));
+            }
+        } catch (error: any) {
+            console.warn(`[OCR] Primary provider ${primaryProvider} failed. Error: ${error.message}`);
+            
+            // Fallback logic
+            try {
+                if (primaryProvider === 'gemini') {
+                    console.log('[OCR] Falling back to Groq...');
+                    usedProvider = 'groq';
+                    responseText = await limitConcurrency(() => extractWithGroq(base64Data, mimeType));
+                } else {
+                    console.log('[OCR] Falling back to Gemini...');
+                    usedProvider = 'gemini';
+                    const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
+                    const prompt = "Analyze this receipt and return JSON with amount, currency, description, category, date, and merchant.";
+                    responseText = await limitConcurrency(() => generateWithGemini(model, [prompt, { inlineData: { data: base64Data, mimeType } }]));
+                }
+            } catch (fallbackError: any) {
+                console.error(`[OCR] Fallback failed: ${fallbackError.message}`);
+                throw fallbackError;
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let parsedData: any;
-        try {
-            parsedData = JSON.parse(jsonString);
-        } catch {
-            console.error('[OCR] Failed to parse JSON. Raw (first 500 chars):', responseText.slice(0, 500));
-            return NextResponse.json({ error: 'OCR returned invalid data. Try another image.' }, { status: 422 });
-        }
+        if (!responseText) throw new Error('No response from providers');
 
-        // Clean up the amount field
+        // Extract JSON
+        let jsonString = responseText;
+        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || responseText.match(/{[\s\S]*}/);
+        if (jsonMatch) jsonString = jsonMatch[1] || jsonMatch[0];
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsedData: any = JSON.parse(jsonString);
         if (parsedData.amount && parsedData.amount !== 'N/A') {
-            const cleanedAmount = parsedData.amount.replace(/[^0-9.]/g, '');
-            parsedData.amount = cleanedAmount;
+            parsedData.amount = parsedData.amount.replace(/[^0-9.]/g, '');
         }
 
-        return NextResponse.json(parsedData, { status: 200 });
+        return NextResponse.json({ ...parsedData, provider: usedProvider }, { status: 200 });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-        const status = error?.status || error?.response?.status || error?.httpStatusCode || error?.customStatus;
-        const isQuotaZero = error?.isQuotaZero;
-
-        // Fallback mode if enabled and we hit quota 0 or 429
-        if (process.env.OCR_FALLBACK === '1' && (isQuotaZero || status === 429 || status === 503)) {
-            console.warn('[OCR] Using fallback OCR response due to Gemini API errors or zero quota.');
-            return NextResponse.json(
-                { merchant: null, amount: null, date: null, items: [], category: null, description: null, note: "Gemini unavailable" },
-                { status: 200 }
-            );
-        }
-
-        if (isQuotaZero) {
-            return NextResponse.json(
-                { error: error.customMessage || 'Gemini API quota is 0 for this project/region. Enable billing or increase quota in Google AI Studio / Cloud Quotas.' },
-                { status: 503 }
-            );
-        }
-
-        // Handle rate-limit errors that escaped retries
-        if (status === 429) {
-            console.error('[OCR] Rate limit exceeded even after retries:', error.message);
-            return NextResponse.json(
-                { error: 'OCR service is currently busy. Please wait a moment and try again.' },
-                { status: 429 }
-            );
-        }
-
-        console.error('[OCR] Error processing receipt:', error.message || error);
         return NextResponse.json(
             { error: 'OCR service temporarily unavailable. Please try again shortly.' },
             { status: 503 }
