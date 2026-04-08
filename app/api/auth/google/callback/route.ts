@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
                 googleId,
                 from: 'google'
             });
-            return NextResponse.redirect(`${app_url}/signup?${params.toString()}`);
+            return NextResponse.redirect(`${app_url}/signup/google-complete?${params.toString()}`);
         }
 
         // 4. Create Session
