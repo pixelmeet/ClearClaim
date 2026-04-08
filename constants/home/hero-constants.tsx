@@ -1,32 +1,43 @@
-"use client";
-
-import type { LucideIcon } from "lucide-react";
-import { Users, Receipt, Zap, ShieldCheck } from "lucide-react";
-
-export type HeroHighlight = {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-};
+import {
+  Receipt,
+  GitBranch,
+  Shield,
+  BarChart3,
+  ClipboardCheck,
+} from "lucide-react";
 
 export const HERO_CONTENT = {
-  id: "hero",
   headline: {
-    primary: "ClearClaim,",
-    secondary: "Expense Reimbursement Made Simple",
+    primary: "Automate Expense Approvals.",
+    secondary: "Eliminate Chaos.",
   },
   description:
-    "Automate your expense approval workflows with configurable rules, OCR-powered receipt scanning, and multi-step approvals. Convert expenses to your company's base currency automatically.",
+    "ClearClaim streamlines expense management with intelligent approval workflows, real-time dashboards, and bulletproof audit trails — so your finance team can focus on what matters.",
   ctas: {
-    primary: { href: "/signup", label: "Get Started" },
-    secondary: { href: "/login", label: "Sign In" },
+    primary: { label: "Get Started", href: "/signup" },
+    secondary: { label: "Book Demo", href: "#features" },
   },
   highlights: [
-    { icon: Zap, title: "Fast", description: "Automated Workflows" },
-    { icon: Receipt, title: "Smart", description: "OCR Receipt Scanning" },
-    { icon: ShieldCheck, title: "Secure", description: "Complete Audit Trail" },
-    { icon: Users, title: "Flexible", description: "Multi-Step Approvals" },
-  ] as HeroHighlight[],
-} as const;
-
-
+    {
+      icon: Receipt,
+      title: "50%",
+      description: "Faster approvals",
+    },
+    {
+      icon: GitBranch,
+      title: "100%",
+      description: "Audit compliance",
+    },
+    {
+      icon: Shield,
+      title: "Zero",
+      description: "Data leaks",
+    },
+    {
+      icon: BarChart3,
+      title: "Real-time",
+      description: "Financial insights",
+    },
+  ],
+  trustBadge: "Trusted by 500+ finance teams worldwide",
+};

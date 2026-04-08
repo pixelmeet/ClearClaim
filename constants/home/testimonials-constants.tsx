@@ -1,80 +1,36 @@
-"use client";
-
-export type Testimonial = {
-  content: string;
-  author: string;
-  role: string;
-  avatar: string;
-  rating: number;
-};
-
 export const TESTIMONIALS_CONTENT = {
   id: "testimonials",
-  eyebrow: "Testimonials",
-  title: "Trusted by Finance Teams Worldwide",
+  eyebrow: "What Teams Say",
+  title: "Trusted by finance leaders",
   description:
-    "See how ClearClaim has transformed expense management for companies of all sizes.",
+    "See how ClearClaim helps companies streamline expense management and approval workflows.",
   items: [
     {
       content:
-        "ClearClaim has cut our expense processing time by 70%. The OCR feature alone saves our team hours every week. The approval workflows are incredibly flexible and easy to configure.",
+        "ClearClaim cut our approval cycle from 5 days to under 24 hours. The automated routing alone saved us 40 hours of manual work per month. Our CFO called it the best ops decision we made all year.",
       author: "Sarah Chen",
-      role: "Finance Director, TechCorp",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
+      role: "CFO, TechStart Inc",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
       rating: 5,
+      metric: "80% faster approvals",
     },
     {
       content:
-        "The multi-step approval system is exactly what we needed. We can now route expenses based on amount and department automatically. The audit trail gives us complete visibility.",
-      author: "Michael Rodriguez",
-      role: "CFO, Global Solutions Inc",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
+        "The multi-tenant security gives us peace of mind. Each subsidiary operates independently with their own approval chains and policies. Zero data leakage between entities — verified by our security audit.",
+      author: "Michael Torres",
+      role: "VP Finance, Globex Group",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
       rating: 5,
+      metric: "100% audit compliance",
     },
     {
       content:
-        "Currency conversion was a nightmare before ClearClaim. Now all our international expenses are automatically converted to our base currency. It's seamless and accurate.",
-      author: "David Kim",
-      role: "Operations Manager, TravelCo",
-      avatar:
-        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
+        "The audit trail is immaculate. Every action is logged and timestamped. Our compliance team used to spend 3 days preparing for audits — now it takes 20 minutes to pull every record.",
+      author: "Emily Rodriguez",
+      role: "Head of Compliance, SecureFinance",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
       rating: 5,
+      metric: "3 days → 20 minutes",
     },
-    {
-      content:
-        "As an employee, submitting expenses is now so much easier. I just take a photo of my receipt and everything is filled in automatically. Approval notifications keep me informed.",
-      author: "Emily Johnson",
-      role: "Sales Executive, SalesForce Pro",
-      avatar:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-      rating: 5,
-    },
-    {
-      content:
-        "The configurable rules feature is powerful. We set up different approval flows for different expense categories, and it all works automatically. Our finance team loves it.",
-      author: "James Wilson",
-      role: "Accounting Manager, FinanceHub",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-      rating: 5,
-    },
-    {
-      content:
-        "ClearClaim's audit trail is comprehensive and has made compliance audits much easier. We can track every change and approval with complete transparency.",
-      author: "Lisa Anderson",
-      role: "Compliance Officer, SecureFinance",
-      avatar:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-      rating: 5,
-    },
-  ] as Testimonial[],
-  communityAvatars: [
-    "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=128&q=80",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=128&q=80",
-    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=128&q=80",
-    "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=128&q=80",
-    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=128&q=80",
   ],
-} as const;
+};

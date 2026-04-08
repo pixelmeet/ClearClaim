@@ -175,6 +175,15 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      
+      // Specifically handle MongoDB connection issues
+      if (error.message.includes('ECONNREFUSED') || error.name === 'MongooseServerSelectionError') {
+        console.error('DATABASE CONNECTIVITY ERROR:', error);
+        return NextResponse.json(
+          { error: 'Database connection failed. Please ensure your IP is whitelisted in MongoDB Atlas Network Access.' },
+          { status: 503 }
+        );
+      }
     }
     console.error('Signup error:', error);
     return NextResponse.json(

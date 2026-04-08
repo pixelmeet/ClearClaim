@@ -34,15 +34,22 @@ async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      // Atlas can take longer than local Mongo on first handshake.
-      // Keep this strict enough to fail fast, but not so low it causes
-      // false negatives on healthy Atlas clusters.
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 8000, // Fail faster if Atlas is blocking us
       connectTimeoutMS: 10000,
+      family: 4, // Force IPv4 to avoid some DNS resolution bugs in local Node environments
     };
 
+    console.log('🔗 Attempting to connect to MongoDB Atlas...');
+    
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('✅ MongoDB Connected Successfully');
       return mongoose;
+    }).catch((err) => {
+      console.error('❌ MongoDB Connection Error:', err.message);
+      if (err.message.includes('ECONNREFUSED')) {
+        console.error('👉 TIP: This usually means your IP is not whitelisted in Atlas Network Access.');
+      }
+      throw err;
     });
   }
 

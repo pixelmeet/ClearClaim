@@ -1,58 +1,38 @@
-"use client";
-
-export type FaqItem = {
-  question: string;
-  answer: string;
-};
-
 export const FAQ_CONTENT = {
   id: "faq",
   eyebrow: "FAQ",
-  title: "Frequently Asked Questions",
-  description:
-    "Everything you need to know about ClearClaim and how it can help streamline your expense management.",
+  title: "Frequently asked questions",
+  description: "Everything you need to know about ClearClaim.",
   items: [
     {
-      question: "How does the OCR receipt scanning work?",
+      question: "How does the multi-tenant architecture work?",
       answer:
-        "ClearClaim uses advanced OCR (Optical Character Recognition) technology to automatically extract expense details from receipt images. Simply upload a photo of your receipt, and the system will extract the merchant name, date, amount, and category. You can review and edit the extracted information before submitting.",
+        "Every database entity is scoped to a companyId. All queries filter by this ID, derived from the authenticated user's JWT session. There is no cross-company data access at any layer — not in queries, not in API responses, not in middleware.",
     },
     {
-      question: "Can I customize approval workflows?",
+      question: "Can we customize the approval workflow?",
       answer:
-        "Yes! ClearClaim offers flexible approval workflow configuration. You can create multi-step approval processes, set up conditional rules based on expense amount or category, assign specific approvers, or use role-based approvals. Admins can configure these rules through the admin panel.",
+        "Yes. Admins can define multi-step approval chains with flow-based routing (ordered steps by user or role) and rule-based routing (direct approver assignment). You can also set conditional auto-approval rules based on percentages, specific approvers, or hybrid logic.",
     },
     {
       question: "How does currency conversion work?",
       answer:
-        "ClearClaim automatically converts all expenses to your company's base currency using real-time exchange rates. When an employee submits an expense in a foreign currency, the system records both the original amount and currency, then converts it to your base currency using the exchange rate from the expense date.",
+        "When an expense is submitted in a currency different from the company default, ClearClaim fetches live exchange rates, calculates the converted amount, and stores both the original and converted values along with the rate and date.",
     },
     {
-      question: "What is included in the audit trail?",
+      question: "What roles are available?",
       answer:
-        "The audit trail captures every action taken on an expense, including submission, approvals, rejections, modifications, and status changes. Each entry includes the user who performed the action, timestamp, and details of what changed. This provides complete transparency and accountability for compliance purposes.",
+        "Three roles: Employee (submit and track expenses), Manager (approve team expenses), and Admin (full control — users, rules, settings, and global overrides).",
     },
     {
-      question: "What roles are available in the system?",
+      question: "Is there an audit trail?",
       answer:
-        "ClearClaim has three main roles: Employees can submit and track their expenses, Managers can review and approve expenses for their team members, and Admins have full system access including user management, workflow configuration, and system-wide expense oversight.",
+        "Every approve, reject, and auto-trigger action creates an immutable ApprovalAction record with the approver, step index, action type, comment, and timestamp. This is an append-only log — actions are never deleted or modified.",
     },
     {
-      question: "Is my data secure?",
+      question: "Can employees edit submitted expenses?",
       answer:
-        "Absolutely. ClearClaim uses enterprise-grade security measures including encrypted data storage, secure authentication, role-based access control, and comprehensive audit logging. All data is stored securely and access is strictly controlled based on user roles.",
+        "Once submitted, expenses enter the approval workflow and cannot be edited. If an expense is rejected, the employee can submit a new corrected expense.",
     },
-    {
-      question: "Can I integrate ClearClaim with our accounting software?",
-      answer:
-        "ClearClaim provides comprehensive audit trails and export capabilities that make it easy to integrate with accounting systems. You can export expense data in various formats for import into your existing accounting software. API access is also available for custom integrations.",
-    },
-    {
-      question: "How quickly can I get started?",
-      answer:
-        "You can get started with ClearClaim in minutes. Simply sign up, configure your company settings, set up your approval workflows, and invite your team members. Our intuitive interface and setup wizard guide you through the process step by step.",
-    },
-  ] as FaqItem[],
-} as const;
-
-
+  ],
+};

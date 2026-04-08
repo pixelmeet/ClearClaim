@@ -16,6 +16,7 @@ import {
     Zap,
     LogOut,
     User,
+    Settings,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -83,6 +84,12 @@ const navSections = [
                 icon: Users,
                 roles: [UserRole.ADMIN],
             },
+            {
+                label: 'Settings',
+                hrefFn: () => '/admin/company',
+                icon: Settings,
+                roles: [UserRole.ADMIN],
+            },
         ],
     },
 ];
@@ -100,19 +107,22 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
         }
     };
 
-    let animIndex = 0;
-
     return (
-        <div className={cn("w-64 h-full flex flex-col relative bg-card/40 backdrop-blur-3xl border-r border-border/50 shadow-sm", className)}>
-            {/* Soft Sidebar subtle gradient highlight */}
-            <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/20 to-transparent" />
+        <div className={cn(
+            "w-64 h-full flex flex-col relative",
+            "bg-sidebar backdrop-blur-2xl",
+            "border-r border-sidebar-border",
+            className
+        )}>
+            {/* Gradient accent line on right edge */}
+            <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-primary/20 to-transparent" />
 
             {/* Content */}
             <div className="relative z-10 flex flex-col h-full">
                 {/* Logo / Brand */}
                 <div className="p-6 pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-md shadow-primary/20">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
                             <Zap className="h-5 w-5 text-white" />
                         </div>
                         <div>
@@ -127,10 +137,10 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
                 </div>
 
                 {/* Divider */}
-                <div className="mx-6 h-px bg-border/40" />
+                <div className="mx-6 h-px bg-border/30" />
 
                 {/* Navigation sections */}
-                <nav className="flex-1 px-4 pt-6 space-y-6 overflow-y-auto">
+                <nav className="flex-1 px-3 pt-6 space-y-6 overflow-y-auto">
                     {navSections.map((section) => {
                         const visibleItems = section.items.filter(
                             (item) => !userRole || item.roles.includes(userRole)
@@ -139,28 +149,27 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
 
                         return (
                             <div key={section.label}>
-                                <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                                     {section.label}
                                 </p>
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     {visibleItems.map((link) => {
                                         const href = link.hrefFn(userRole);
                                         const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard' && href !== '/admin');
-                                        const currentIndex = animIndex++;
                                         return (
                                             <Link key={href} href={href} onClick={onNavigate}>
                                                 <Button
                                                     variant="ghost"
                                                     className={cn(
-                                                        'w-full justify-start relative group rounded-xl h-10 transition-all duration-300',
+                                                        'w-full justify-start relative group rounded-xl h-10 transition-all duration-300 px-3',
                                                         isActive
-                                                            ? 'bg-primary/10 text-primary font-medium hover:bg-primary/15'
+                                                            ? 'bg-primary/10 text-primary font-medium'
                                                             : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                                                     )}
                                                 >
                                                     {/* Active Accent Bar */}
                                                     {isActive && (
-                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-lg bg-primary" />
+                                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary shadow-sm shadow-primary/50" />
                                                     )}
 
                                                     {/* Icon */}
@@ -175,7 +184,7 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
 
                                                     {/* Active arrow */}
                                                     {isActive && (
-                                                        <ChevronRight className="h-4 w-4 text-primary/70" />
+                                                        <ChevronRight className="h-3.5 w-3.5 text-primary/50" />
                                                     )}
                                                 </Button>
                                             </Link>
@@ -189,15 +198,14 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
 
                 {/* Bottom section */}
                 <div className="p-4 space-y-3 mt-auto">
-                    {/* Divider */}
-                    <div className="h-px bg-border/40 mx-2" />
+                    <div className="h-px bg-border/20 mx-2" />
 
                     {/* Role badge */}
                     <div className="px-3 py-2">
                         <div className="flex items-center gap-2 text-xs font-medium">
                             <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
                             </span>
                             <span className="text-muted-foreground capitalize">
                                 {userRole ? userRole.toLowerCase() : 'User'} Access
@@ -208,7 +216,7 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
                     {/* Logout */}
                     <Button
                         variant="ghost"
-                        className="w-full justify-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-10 transition-all group"
+                        className="w-full justify-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-10 transition-all group px-3"
                         onClick={handleLogout}
                     >
                         <LogOut className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
