@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getDb } from "@/lib/database";
+import connectToDatabase from "@/lib/db";
+import User from "@/models/User";
 
 export async function POST(request: Request) {
-  const db = await getDb();
-
   try {
+    await connectToDatabase();
     const { email, otp, password } = await request.json();
 
     if (!email || !otp || !password) {
       return NextResponse.json({ message: "Missing data" }, { status: 400 });
     }
 
-    const user = await db.findUserByEmail(email);
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (!user) {
       return NextResponse.json(
@@ -24,8 +24,9 @@ export async function POST(request: Request) {
     if (
       !user.otp ||
       user.otp !== otp ||
+      user.otpPurpose !== "password_reset" ||
       !user.otpExpires ||
-      Date.now() > user.otpExpires
+      Date.now() > new Date(user.otpExpires).getTime()
     ) {
       return NextResponse.json(
         { message: "Invalid or expired session" },
@@ -35,11 +36,11 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    await db.updateUser(user.id, {
-      passwordHash,
-      otp: null,
-      otpExpires: null,
-    });
+    user.passwordHash = passwordHash;
+    user.otp = null;
+    user.otpExpires = null;
+    user.otpPurpose = null;
+    await user.save();
 
     return NextResponse.json(
       { message: "Password reset successful" },

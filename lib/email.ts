@@ -38,22 +38,37 @@ function getTransporter() {
  * @param to The recipient's email address.
  * @param otp The 6-digit code to be sent.
  */
-export async function sendOTPEmail(to: string, otp: string) {
+export async function sendOTPEmail(
+  to: string,
+  otp: string,
+  purpose: "signup" | "password_reset" = "password_reset"
+) {
   try {
     const transporter = getTransporter();
+    const isSignup = purpose === "signup";
+    const subject = isSignup
+      ? "Verify Your Account"
+      : "Your Password Reset Code";
+    const heading = isSignup ? "Verify Your Email" : "Password Reset Request";
+    const intro = isSignup
+      ? "Welcome! Use the code below to verify your account and complete signup."
+      : "We received a request to reset your password. Use the code below to complete the process.";
+    const footer = isSignup
+      ? "If you did not create this account, please ignore this email."
+      : "If you did not request a password reset, please ignore this email.";
     const info = await transporter.sendMail({
       from: `"${process.env.APP_NAME || "Your App"}" <${process.env.EMAIL_FROM || "noreply@example.com"}>`,
       to: to,
-      subject: "Your Password Reset Code",
-      text: `Your One-Time Password (OTP) for resetting your password is: ${otp}. It expires in 10 minutes.`,
+      subject,
+      text: `Your One-Time Password (OTP) is: ${otp}. It expires in 10 minutes.`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <h2 style="color: #333;">Password Reset Request</h2>
-          <p>We received a request to reset your password. Use the code below to complete the process.</p>
+          <h2 style="color: #333;">${heading}</h2>
+          <p>${intro}</p>
           <p style="font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
             ${otp}
           </p>
-          <p>This code will expire in 10 minutes. If you did not request a password reset, please ignore this email.</p>
+          <p>This code will expire in 10 minutes. ${footer}</p>
         </div>
       `,
     });

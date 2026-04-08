@@ -6,6 +6,9 @@ export interface IUser extends Document {
     name: string;
     email: string;
     passwordHash: string;
+    otp?: string | null;
+    otpExpires?: Date | null;
+    otpPurpose?: 'signup' | 'password_reset' | null;
     role: UserRole;
     department?: string | null;
     managerId?: mongoose.Types.ObjectId;
@@ -22,6 +25,9 @@ const UserSchema = new Schema<IUser>(
         name: { type: String, required: true },
         email: { type: String, required: true },
         passwordHash: { type: String, required: true },
+        otp: { type: String, default: null },
+        otpExpires: { type: Date, default: null },
+        otpPurpose: { type: String, enum: ['signup', 'password_reset'], default: null },
         role: { type: String, enum: Object.values(UserRole), default: UserRole.EMPLOYEE },
         department: { type: String, default: null },
         managerId: { type: Schema.Types.ObjectId, ref: 'User' },

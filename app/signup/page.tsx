@@ -40,11 +40,21 @@ interface CountryData {
 
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
 
 export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [countries, setCountries] = useState<CountryData[]>([]);
+  const [otp, setOtp] = useState('');
+  const [otpEmail, setOtpEmail] = useState('');
+  const [requiresOtp, setRequiresOtp] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const form = useForm<z.infer<typeof SignupSchema>>({
     resolver: zodResolver(SignupSchema),
@@ -70,6 +80,18 @@ export default function SignupPage() {
       .catch((err) => console.error('Failed to fetch countries', err));
   }, []);
 
+  useEffect(() => {
+    if (!requiresOtp || resendCooldown <= 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [requiresOtp, resendCooldown]);
+
   async function onSubmit(values: z.infer<typeof SignupSchema>) {
     setLoading(true);
     try {
@@ -89,12 +111,15 @@ export default function SignupPage() {
         throw new Error(msg);
       }
 
+      if (data.requiresOtp) {
+        setOtpEmail(data.email || values.email);
+        setRequiresOtp(true);
+        toast.success(data.message || 'Verification code sent to your email.');
+        return;
+      }
+
       const redirectTo = data.redirectTo || '/dashboard';
-      toast.success(
-        data.user?.role === 'ADMIN'
-          ? 'Enterprise workspace created successfully!'
-          : 'Account created successfully!'
-      );
+      toast.success('Account created successfully!');
       router.refresh();
       router.push(redirectTo);
     } catch (error) {
@@ -105,6 +130,89 @@ export default function SignupPage() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onVerifyOtp() {
+    if (otp.length !== 6) {
+      toast.error('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: otpEmail,
+          otp,
+          flow: 'signup',
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'OTP verification failed');
+      }
+
+      toast.success(data.message || 'Account verified successfully.');
+      router.refresh();
+      router.push(data.redirectTo || '/dashboard');
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onResendOtp() {
+    if (resendCooldown > 0 || resendLoading || !otpEmail) {
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      const currentValues = form.getValues();
+      const payload = {
+        ...currentValues,
+        email: otpEmail,
+      };
+
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const msg =
+          typeof data.error === 'object'
+            ? Object.values(data.error).flat().join(' ')
+            : data.error || 'Failed to resend code';
+        throw new Error(msg);
+      }
+
+      if (!data.requiresOtp) {
+        throw new Error('Unable to resend verification code at this time.');
+      }
+
+      setOtp('');
+      setResendCooldown(30);
+      toast.success('A new verification code has been sent.');
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to resend verification code');
+      }
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -159,6 +267,51 @@ export default function SignupPage() {
             <p className="text-muted-foreground text-lg">Start your 14-day premium trial today.</p>
           </div>
 
+          {requiresOtp ? (
+            <div className="space-y-6 rounded-xl border border-border/50 bg-muted/20 p-6">
+              <div>
+                <h3 className="text-xl font-semibold text-foreground">Verify your email</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Enter the 6-digit code sent to <span className="font-medium">{otpEmail}</span>.
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={setOtp}
+                  disabled={loading}
+                >
+                  <InputOTPGroup>
+                    {[...Array(6)].map((_, i) => (
+                      <InputOTPSlot key={i} index={i} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <Button
+                type="button"
+                className="w-full h-12"
+                disabled={loading}
+                onClick={onVerifyOtp}
+              >
+                {loading ? 'Verifying...' : 'Verify and continue'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12"
+                disabled={resendLoading || resendCooldown > 0 || loading}
+                onClick={onResendOtp}
+              >
+                {resendLoading
+                  ? 'Resending...'
+                  : resendCooldown > 0
+                    ? `Resend OTP in ${resendCooldown}s`
+                    : 'Resend OTP'}
+              </Button>
+            </div>
+          ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
@@ -258,6 +411,7 @@ export default function SignupPage() {
               </Button>
             </form>
           </Form>
+          )}
 
           <p className="mt-10 text-center text-muted-foreground">
             Operational already?{' '}

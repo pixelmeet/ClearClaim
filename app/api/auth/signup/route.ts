@@ -3,10 +3,11 @@ import connectToDatabase from '@/lib/db';
 import User, { UserRole } from '@/models/User';
 import Company from '@/models/Company';
 import { SignupSchema } from '@/lib/validation';
-import { createSessionCookie } from '@/lib/auth/createSessionCookie';
 import { hashPassword } from '@/lib/auth/hashPassword';
 import { getCurrencyForCountry } from '@/lib/api/restcountries';
 import { clientKeyFromRequest, rateLimit } from '@/lib/rateLimit';
+import { sendOTPEmail } from '@/lib/email';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,28 +57,37 @@ export async function POST(req: NextRequest) {
       });
 
       const passwordHash = await hashPassword(password);
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
       const user = (await User.create({
         companyId: company._id,
         name: fullName.trim(),
         email: emailLower,
         passwordHash,
+        otp,
+        otpExpires,
+        otpPurpose: 'signup',
         role: UserRole.ADMIN,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       })) as any;
 
-
-      await createSessionCookie({
-        userId: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        companyId: company._id.toString(),
-      });
+      try {
+        await sendOTPEmail(user.email, otp, 'signup');
+      } catch (emailError) {
+        await User.deleteOne({ _id: user._id });
+        await Company.deleteOne({ _id: company._id });
+        console.error('Failed to send signup OTP email:', emailError);
+        return NextResponse.json(
+          { error: 'Failed to send verification email. Please try again.' },
+          { status: 500 }
+        );
+      }
 
       return NextResponse.json({
         success: true,
-        redirectTo: '/admin',
-        user: { id: user._id.toString(), name: user.name, role: user.role },
+        requiresOtp: true,
+        email: user.email,
+        message: 'Verification code sent to your email.',
       });
     }
 
@@ -94,6 +104,31 @@ export async function POST(req: NextRequest) {
       email: emailLower,
     });
     if (existingUser) {
+      if (existingUser.otpPurpose === 'signup') {
+        const otp = crypto.randomInt(100000, 999999).toString();
+        existingUser.otp = otp;
+        existingUser.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        existingUser.otpPurpose = 'signup';
+        await existingUser.save();
+
+        try {
+          await sendOTPEmail(existingUser.email, otp, 'signup');
+        } catch (emailError) {
+          console.error('Failed to resend signup OTP email:', emailError);
+          return NextResponse.json(
+            { error: 'Failed to send verification email. Please try again.' },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          requiresOtp: true,
+          email: existingUser.email,
+          message: 'Verification code sent to your email.',
+        });
+      }
+
       return NextResponse.json(
         { error: 'User already exists' },
         { status: 409 }
@@ -101,27 +136,36 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password);
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     const user = (await User.create({
       companyId: existingCompany._id,
       name: fullName.trim(),
       email: emailLower,
       passwordHash,
+      otp,
+      otpExpires,
+      otpPurpose: 'signup',
       role: UserRole.EMPLOYEE,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     })) as any;
 
-    await createSessionCookie({
-      userId: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      companyId: existingCompany._id.toString(),
-    });
+    try {
+      await sendOTPEmail(user.email, otp, 'signup');
+    } catch (emailError) {
+      await User.deleteOne({ _id: user._id });
+      console.error('Failed to send signup OTP email:', emailError);
+      return NextResponse.json(
+        { error: 'Failed to send verification email. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      redirectTo: '/dashboard',
-      user: { id: user._id.toString(), name: user.name, role: user.role },
+      requiresOtp: true,
+      email: user.email,
+      message: 'Verification code sent to your email.',
     });
   } catch (error) {
     if (error instanceof Error) {

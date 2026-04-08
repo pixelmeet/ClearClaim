@@ -85,7 +85,7 @@ function ResetPasswordContent() {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: values.otp }),
+        body: JSON.stringify({ email, otp: values.otp, flow: "password_reset" }),
       });
 
       const data = await res.json();

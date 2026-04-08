@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/database";
+import connectToDatabase from "@/lib/db";
+import User from "@/models/User";
+import { createSessionCookie } from "@/lib/auth/createSessionCookie";
+import { UserRole } from "@/lib/types";
 
 export async function POST(request: Request) {
-  const db = await getDb();
-
   try {
-    const { email, otp } = await request.json();
+    await connectToDatabase();
+    const { email, otp, flow = "password_reset" } = await request.json();
 
     if (!email || !otp) {
       return NextResponse.json(
@@ -14,18 +16,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await db.findUserByEmail(email);
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
 
-    if (!user || !user.otp || !user.otpExpires) {
+    if (!user || !user.otp || !user.otpExpires || user.otpPurpose !== flow) {
       return NextResponse.json({ message: "Invalid request" }, { status: 400 });
     }
 
-    if (Date.now() > user.otpExpires) {
+    if (Date.now() > new Date(user.otpExpires).getTime()) {
       return NextResponse.json({ message: "OTP has expired" }, { status: 400 });
     }
 
     if (user.otp !== otp) {
       return NextResponse.json({ message: "Invalid OTP" }, { status: 400 });
+    }
+
+    if (flow === "signup") {
+      user.otp = null;
+      user.otpExpires = null;
+      user.otpPurpose = null;
+      await user.save();
+
+      await createSessionCookie({
+        userId: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role as UserRole,
+        companyId: user.companyId.toString(),
+      });
+
+      const redirectTo = user.role === UserRole.ADMIN ? "/admin" : "/dashboard";
+      return NextResponse.json(
+        { message: "Account verified successfully", redirectTo },
+        { status: 200 }
+      );
     }
 
     return NextResponse.json({ message: "OTP verified" }, { status: 200 });
