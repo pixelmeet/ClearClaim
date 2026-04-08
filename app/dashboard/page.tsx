@@ -2,9 +2,6 @@ import { getSession } from '@/lib/auth';
 import Link from "next/link";
 import { UserRole } from '@/lib/types';
 import {
-    DollarSign,
-    Clock,
-    CheckCircle2,
     FileText,
     PlusCircle,
     CheckCircle,
@@ -83,7 +80,7 @@ export default async function DashboardPage() {
         {
             title: isManager ? 'Team Expenses' : 'Total Expenses',
             value: `${companyCurrency} ${totalAmount.toLocaleString()}`,
-            icon: DollarSign,
+            iconName: 'dollarSign',
             colorClass: 'text-primary',
             bgClass: 'bg-primary/10',
             trend: '+12%',
@@ -92,7 +89,7 @@ export default async function DashboardPage() {
         {
             title: isManager ? 'Pending Approvals' : 'Pending Approval',
             value: pendingCount.toString(),
-            icon: Clock,
+            iconName: 'clock',
             colorClass: 'text-warning',
             bgClass: 'bg-warning/10',
             trend: null,
@@ -101,7 +98,7 @@ export default async function DashboardPage() {
         {
             title: 'Approved',
             value: approvedCount.toString(),
-            icon: CheckCircle2,
+            iconName: 'checkCircle2',
             colorClass: 'text-success',
             bgClass: 'bg-success/10',
             trend: '+24%',
@@ -147,7 +144,7 @@ export default async function DashboardPage() {
                         key={stat.title}
                         title={stat.title}
                         value={stat.value}
-                        icon={stat.icon}
+                        iconName={stat.iconName}
                         colorClass={stat.colorClass}
                         bgClass={stat.bgClass}
                         trend={stat.trend}

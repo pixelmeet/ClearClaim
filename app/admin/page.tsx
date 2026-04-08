@@ -2,9 +2,6 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
     Users,
-    UserCog,
-    Building,
-    ShieldAlert,
     ArrowRight,
     Settings,
     CreditCard,
@@ -44,7 +41,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Total Users',
             value: analytics.totalUsers,
-            icon: Users,
+            iconName: 'users',
             colorClass: 'text-primary',
             bgClass: 'bg-primary/10',
             trend: '+12%',
@@ -53,7 +50,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Managers',
             value: analytics.managers,
-            icon: UserCog,
+            iconName: 'userCog',
             colorClass: 'text-accent',
             bgClass: 'bg-accent/10',
             trend: null,
@@ -62,7 +59,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Employees',
             value: analytics.employees,
-            icon: Building,
+            iconName: 'building',
             colorClass: 'text-success',
             bgClass: 'bg-success/10',
             trend: null,
@@ -71,7 +68,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Disabled Accounts',
             value: analytics.disabled,
-            icon: ShieldAlert,
+            iconName: 'shieldAlert',
             colorClass: 'text-destructive',
             bgClass: 'bg-destructive/10',
             trend: null,
@@ -104,7 +101,7 @@ export default async function AdminDashboardPage() {
                         key={stat.title}
                         title={stat.title}
                         value={stat.value}
-                        icon={stat.icon}
+                        iconName={stat.iconName}
                         colorClass={stat.colorClass}
                         bgClass={stat.bgClass}
                         trend={stat.trend}

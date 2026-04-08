@@ -1,12 +1,32 @@
 "use client";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Users,
+  UserCog,
+  Building,
+  ShieldAlert,
+  DollarSign,
+  Clock,
+  CheckCircle2,
+} from "lucide-react";
+
+const iconMap = {
+  users: Users,
+  userCog: UserCog,
+  building: Building,
+  shieldAlert: ShieldAlert,
+  dollarSign: DollarSign,
+  clock: Clock,
+  checkCircle2: CheckCircle2,
+} as const;
 
 interface KPICardProps {
   title: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
+  iconName: keyof typeof iconMap;
   trend?: string | null;
   trendPositive?: boolean;
   colorClass?: string;
@@ -17,13 +37,15 @@ interface KPICardProps {
 export function KPICard({
   title,
   value,
-  icon: Icon,
+  iconName,
   trend,
   trendPositive = true,
   colorClass = "text-primary",
   bgClass = "bg-primary/10",
   index = 0,
 }: KPICardProps) {
+  const Icon = iconMap[iconName];
+
   return (
     <motion.div
       className="glass-panel relative overflow-hidden rounded-2xl p-6 group cursor-default floating-card"
