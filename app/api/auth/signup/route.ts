@@ -91,14 +91,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Company exists: Create EMPLOYEE user
-    if (!inviteCode || inviteCode !== existingCompany.inviteCode) {
-      return NextResponse.json(
-        { error: 'Invalid invite code. Ask your company admin for the code.' },
-        { status: 403 }
-      );
-    }
-
     const existingUser = await User.findOne({
       companyId: existingCompany._id,
       email: emailLower,
@@ -132,6 +124,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'User already exists' },
         { status: 409 }
+      );
+    }
+
+    // Company exists and this is a fresh employee signup:
+    // require invite code before allowing new user creation.
+    if (!inviteCode || inviteCode !== existingCompany.inviteCode) {
+      return NextResponse.json(
+        { error: 'Invalid invite code. Ask your company admin for the code.' },
+        { status: 403 }
       );
     }
 
