@@ -18,6 +18,19 @@ import { Upload, Sparkles, X, Loader2, AlertCircle } from 'lucide-react';
 // Common currencies
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD'];
 
+const OCR_CATEGORY_MAP: Record<string, ExpenseCategory> = {
+    food_dining: ExpenseCategory.MEALS,
+    groceries: ExpenseCategory.SUPPLIES,
+    transportation: ExpenseCategory.TRAVEL,
+    accommodation: ExpenseCategory.TRAVEL,
+    entertainment: ExpenseCategory.OTHER,
+    shopping: ExpenseCategory.SUPPLIES,
+    health_medical: ExpenseCategory.OTHER,
+    utilities: ExpenseCategory.OTHER,
+    fuel: ExpenseCategory.TRAVEL,
+    other: ExpenseCategory.OTHER,
+};
+
 export default function NewExpensePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -145,14 +158,20 @@ export default function NewExpensePage() {
                 form.setValue('description', `${data.description}${data.merchant && data.merchant !== 'N/A' ? ` at ${data.merchant}` : ''}`);
             }
             if (data.date && data.date !== 'N/A') {
-                const parts = data.date.split('/');
-                if (parts.length === 3) {
-                    const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    form.setValue('expenseDate', formattedDate);
+                const rawDate = String(data.date).trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                    form.setValue('expenseDate', rawDate);
+                } else {
+                    const parts = rawDate.split('/');
+                    if (parts.length === 3) {
+                        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                        form.setValue('expenseDate', formattedDate);
+                    }
                 }
             }
             if (data.category && data.category !== 'N/A') {
-                const upperCat = data.category.toUpperCase();
+                const rawCategory = String(data.category).trim();
+                const upperCat = rawCategory.toUpperCase();
                 if (Object.values(ExpenseCategory).includes(upperCat as ExpenseCategory)) {
                     form.setValue('category', upperCat as ExpenseCategory);
                 } else {
@@ -165,6 +184,11 @@ export default function NewExpensePage() {
                     };
                     if (catMap[upperCat]) {
                         form.setValue('category', catMap[upperCat]);
+                    } else {
+                        const normalized = rawCategory.toLowerCase().replace(/\s+/g, '_');
+                        if (OCR_CATEGORY_MAP[normalized]) {
+                            form.setValue('category', OCR_CATEGORY_MAP[normalized]);
+                        }
                     }
                 }
             }
@@ -326,7 +350,7 @@ export default function NewExpensePage() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Currency</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select currency" />
@@ -351,7 +375,7 @@ export default function NewExpensePage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Category</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select category" />

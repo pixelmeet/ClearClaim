@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSession } from '@/lib/auth';
+import { RECEIPT_EXTRACTION_PROMPT } from '@/lib/receipt-prompt';
+import { normalizeReceiptData } from '@/lib/normalize-receipt';
 
 function getGenAI(): GoogleGenerativeAI {
   const key = process.env.GEMINI_API_KEY;
@@ -40,8 +42,6 @@ async function extractWithGroq(base64Data: string, mimeType: string): Promise<st
         throw new Error('GROQ_API_KEY is missing or not configured');
     }
 
-    const prompt = "Analyze this receipt or expense document image and extract the following information. Return ONLY valid JSON. The JSON object must have these exact fields: 'amount' (string, remove currency symbols), 'currency' (e.g., 'USD', 'EUR'), 'description' (detailed description), 'category' (map to 'Food', 'Travel', 'Office', 'Software', 'Training', or 'Other'), 'date' (dd/mm/yyyy), and 'merchant'. If any information cannot be extracted, use 'N/A'.";
-
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -54,7 +54,7 @@ async function extractWithGroq(base64Data: string, mimeType: string): Promise<st
                 {
                     role: 'user',
                     content: [
-                        { type: 'text', text: prompt },
+                        { type: 'text', text: RECEIPT_EXTRACTION_PROMPT },
                         {
                             type: 'image_url',
                             image_url: {
@@ -147,34 +147,23 @@ export async function POST(req: NextRequest) {
         const base64Data = buffer.toString('base64');
         const mimeType = file.type;
 
-        const primaryProvider = process.env.OCR_PROVIDER || 'gemini';
+        const primaryProvider = 'gemini';
+        let usedProvider: 'gemini' | 'groq' = 'gemini';
         let responseText: string | undefined;
-        let usedProvider = primaryProvider;
 
         try {
-            if (primaryProvider === 'groq') {
-                responseText = await limitConcurrency(() => extractWithGroq(base64Data, mimeType));
-            } else {
-                const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
-                const prompt = "Analyze this receipt and return JSON with amount, currency, description, category, date, and merchant.";
-                responseText = await limitConcurrency(() => generateWithGemini(model, [prompt, { inlineData: { data: base64Data, mimeType } }]));
-            }
+            const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
+            responseText = await limitConcurrency(() =>
+                generateWithGemini(model, [RECEIPT_EXTRACTION_PROMPT, { inlineData: { data: base64Data, mimeType } }])
+            );
         } catch (error: any) {
             console.warn(`[OCR] Primary provider ${primaryProvider} failed. Error: ${error.message}`);
             
             // Fallback logic
             try {
-                if (primaryProvider === 'gemini') {
-                    console.log('[OCR] Falling back to Groq...');
-                    usedProvider = 'groq';
-                    responseText = await limitConcurrency(() => extractWithGroq(base64Data, mimeType));
-                } else {
-                    console.log('[OCR] Falling back to Gemini...');
-                    usedProvider = 'gemini';
-                    const model = getGenAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
-                    const prompt = "Analyze this receipt and return JSON with amount, currency, description, category, date, and merchant.";
-                    responseText = await limitConcurrency(() => generateWithGemini(model, [prompt, { inlineData: { data: base64Data, mimeType } }]));
-                }
+                console.log('[OCR] Falling back to Groq...');
+                responseText = await limitConcurrency(() => extractWithGroq(base64Data, mimeType));
+                usedProvider = 'groq';
             } catch (fallbackError: any) {
                 console.error(`[OCR] Fallback failed: ${fallbackError.message}`);
                 throw fallbackError;
@@ -183,18 +172,29 @@ export async function POST(req: NextRequest) {
 
         if (!responseText) throw new Error('No response from providers');
 
-        // Extract JSON
-        let jsonString = responseText;
-        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || responseText.match(/{[\s\S]*}/);
-        if (jsonMatch) jsonString = jsonMatch[1] || jsonMatch[0];
+        const rawText = responseText;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const parsedData: any = JSON.parse(jsonString);
-        if (parsedData.amount && parsedData.amount !== 'N/A') {
-            parsedData.amount = parsedData.amount.replace(/[^0-9.]/g, '');
+        // strip markdown fences if model wraps output
+        const cleaned = rawText
+            .replace(/```json/gi, '')
+            .replace(/```/g, '')
+            .trim();
+
+        let parsed: Record<string, unknown>;
+        try {
+            parsed = JSON.parse(cleaned);
+        } catch {
+            // try extracting first {...} block
+            const match = cleaned.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error('No JSON found in AI response');
+            parsed = JSON.parse(match[0]);
         }
 
-        return NextResponse.json({ ...parsedData, provider: usedProvider }, { status: 200 });
+        const result = normalizeReceiptData(parsed);
+        return NextResponse.json({
+            ...result,
+            provider: usedProvider,
+        });
 
     } catch (error: any) {
         return NextResponse.json(
