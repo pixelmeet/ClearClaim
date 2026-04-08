@@ -52,7 +52,7 @@ export function ExpenseChart() {
         </div>
       </div>
 
-      <div className="h-64 md:h-72">
+      <div className="h-48 sm:h-64 lg:h-72">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
             <defs>
@@ -73,6 +73,8 @@ export function ExpenseChart() {
               tickLine={false}
               tick={{ fontSize: 11, fill: '#64748B' }}
               tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              hide={typeof window !== 'undefined' && window.innerWidth < 640}
+              width={typeof window !== 'undefined' && window.innerWidth < 640 ? 0 : 60}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area

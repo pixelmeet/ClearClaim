@@ -48,7 +48,7 @@ export function KPICard({
 
   return (
     <motion.div
-      className="glass-panel relative overflow-hidden rounded-2xl p-6 group cursor-default floating-card"
+      className="glass-panel relative overflow-hidden rounded-2xl p-4 md:p-6 group cursor-default floating-card"
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -76,7 +76,7 @@ export function KPICard({
 
         <div className="flex items-end justify-between mt-2">
           <motion.div
-            className="text-3xl md:text-4xl font-bold tracking-tight text-foreground tabular-nums"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground tabular-nums"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: (index + 2) * 0.12 }}

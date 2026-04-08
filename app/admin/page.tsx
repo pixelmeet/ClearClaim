@@ -86,7 +86,7 @@ export default async function AdminDashboardPage() {
 
             {/* Header */}
             <div className="opacity-0 animate-fade-in-up mt-2">
-                <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-foreground">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-tight text-foreground">
                     Overview
                 </h1>
                 <p className="text-muted-foreground mt-2 text-base">

@@ -82,7 +82,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="opacity-0 animate-fade-in-up">
-        <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-foreground">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-tight text-foreground">
           Dashboard
         </h1>
         <p className="text-muted-foreground mt-2 text-base">
