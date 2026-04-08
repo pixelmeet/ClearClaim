@@ -90,7 +90,7 @@ export const footerConfig: FooterConfig = {
   ],
   contactInfo: {
     address: {
-      line1: "SVNIT",
+      line1: "SDJ International College",
       line2: "Surat, Gujarat, India",
       line3: "",
     },

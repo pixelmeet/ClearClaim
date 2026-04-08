@@ -5,8 +5,17 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ClearClaim - Expense Management",
-  description: "Modern expense management and approval system",
+  title: "ClearClaim — Automate Expense Approvals | Expense Management SaaS",
+  description:
+    "ClearClaim streamlines expense management with intelligent approval workflows, real-time dashboards, and bulletproof audit trails for finance teams.",
+  keywords: [
+    "expense management",
+    "approval workflow",
+    "fintech",
+    "SaaS",
+    "expense tracking",
+    "audit trail",
+  ],
   icons: {
     icon: "/images/logo.svg",
   },

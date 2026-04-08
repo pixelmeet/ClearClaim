@@ -5,7 +5,7 @@ import { MobileAdminNav } from '@/components/admin/MobileAdminNav';
 import { UserRole } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { LogOut, User as UserIcon, Bell } from 'lucide-react';
+import { LogOut, User as UserIcon, Bell, Command } from 'lucide-react';
 
 export default async function AdminLayout({
     children,
@@ -36,52 +36,59 @@ export default async function AdminLayout({
 
             {/* Main Content Area */}
             <div className="flex flex-1 flex-col overflow-hidden relative">
-                {/* Premium Topbar  */}
-                <header className="flex h-16 items-center justify-between border-b border-border/40 bg-background/60 backdrop-blur-xl px-4 md:px-6 z-10 shrink-0 sticky top-0">
-                    {/* Left: Mobile Nav & Welcome */}
+                {/* Glass Topbar */}
+                <header className="flex h-14 items-center justify-between border-b border-border/30 bg-background/60 backdrop-blur-2xl px-4 md:px-6 z-10 shrink-0 sticky top-0">
+                    {/* Left */}
                     <div className="flex items-center gap-2">
                         <MobileAdminNav />
-                        <div className="hidden sm:flex text-sm font-medium items-center gap-2 text-muted-foreground mr-4">
-                            <span>System</span>
-                            <span className="text-border">/</span>
-                            <span className="text-foreground tracking-tight px-2 py-1 bg-primary/10 text-primary rounded-md font-semibold">
+                        <div className="hidden sm:flex text-sm font-medium items-center gap-2 text-muted-foreground">
+                            <span>Admin</span>
+                            <span className="text-border/50">/</span>
+                            <span className="text-foreground tracking-tight px-2 py-1 bg-primary/5 text-primary rounded-md font-semibold text-xs">
                                 {session.name}
                             </span>
                         </div>
                     </div>
 
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-2 md:gap-4">
+                    {/* Center */}
+                    <button
+                        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg glass-panel text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                        <Command className="h-3 w-3" />
+                        <span>Search</span>
+                        <kbd className="ml-2 px-1.5 py-0.5 rounded border border-border/30 bg-muted/30 text-[10px]">⌘K</kbd>
+                    </button>
+
+                    {/* Right */}
+                    <div className="flex items-center gap-2 md:gap-3">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="relative rounded-full h-9 w-9 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                            className="relative rounded-full h-8 w-8 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
                         >
                             <Bell className="h-4 w-4" />
-                            <span className="absolute top-2 right-2.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background animate-pulse" />
+                            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background animate-pulse" />
                         </Button>
 
-                        <div className="h-6 w-px bg-border/50 hidden sm:block mx-1" />
+                        <div className="h-5 w-px bg-border/30 hidden sm:block" />
 
-                        <div className="flex items-center gap-3">
-                            <div className="hidden md:flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full border border-border/40 hover:bg-muted/60 transition-colors">
-                                <UserIcon className="h-3.5 w-3.5 text-primary" />
-                                <span className="max-w-[150px] truncate">{session.email}</span>
+                        <div className="flex items-center gap-2">
+                            <div className="hidden md:flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                <span className="max-w-[120px] truncate">{session.email}</span>
                             </div>
-
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground text-xs font-bold shadow-sm ring-2 ring-background">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground text-[10px] font-bold shadow-sm ring-2 ring-background/50">
                                 {initials}
                             </div>
                         </div>
 
-                        <Link href="/api/auth/logout" prefetch={false} className="hidden sm:block ml-1">
+                        <Link href="/api/auth/logout" prefetch={false} className="hidden sm:block">
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="rounded-full h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                className="rounded-full h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                                 title="Log out"
                             >
-                                <LogOut className="h-4 w-4" />
+                                <LogOut className="h-3.5 w-3.5" />
                             </Button>
                         </Link>
                     </div>

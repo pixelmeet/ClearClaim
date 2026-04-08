@@ -5,7 +5,8 @@ export interface IUser extends Document {
     companyId: mongoose.Types.ObjectId;
     name: string;
     email: string;
-    passwordHash: string;
+    passwordHash?: string;
+    googleId?: string;
     otp?: string | null;
     otpExpires?: Date | null;
     otpPurpose?: 'signup' | 'password_reset' | null;
@@ -24,7 +25,8 @@ const UserSchema = new Schema<IUser>(
         companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
         name: { type: String, required: true },
         email: { type: String, required: true },
-        passwordHash: { type: String, required: true },
+        passwordHash: { type: String, required: false },
+        googleId: { type: String, unique: true, sparse: true },
         otp: { type: String, default: null },
         otpExpires: { type: Date, default: null },
         otpPurpose: { type: String, enum: ['signup', 'password_reset'], default: null },

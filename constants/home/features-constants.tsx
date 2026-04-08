@@ -1,79 +1,54 @@
-"use client";
-
-import type { LucideIcon } from "lucide-react";
 import {
   Receipt,
-  Workflow,
-  DollarSign,
-  FileText,
+  GitBranch,
   ShieldCheck,
-  Users,
-  Settings,
-  Zap,
+  BarChart3,
+  ScrollText,
+  ArrowLeftRight,
 } from "lucide-react";
-
-export type FeatureItem = {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-};
 
 export const FEATURES_CONTENT = {
   id: "features",
-  eyebrow: "Features",
-  title: "Everything You Need for Expense Management",
+  eyebrow: "Powerful Features",
+  title: "Everything your finance team needs",
   description:
-    "Streamline your expense reimbursement process with powerful automation, intelligent workflows, and comprehensive tracking.",
+    "From submission to approval, ClearClaim handles the entire expense lifecycle with enterprise-grade security and real-time visibility.",
   items: [
     {
       icon: Receipt,
-      title: "OCR Receipt Scanning",
+      title: "Expense Submission",
       description:
-        "Automatically extract expense details from receipts using advanced OCR technology, reducing manual data entry.",
+        "Employees submit expenses with receipt uploads, OCR auto-fill, and multi-currency support. Every claim is tracked from day one.",
     },
     {
-      icon: Workflow,
-      title: "Configurable Approval Rules",
+      icon: GitBranch,
+      title: "Approval Workflows",
       description:
-        "Set up custom approval workflows with multi-step and conditional rules based on amount, category, or department.",
-    },
-    {
-      icon: DollarSign,
-      title: "Automatic Currency Conversion",
-      description:
-        "Convert all expenses to your company's base currency automatically using real-time exchange rates.",
-    },
-    {
-      icon: FileText,
-      title: "Complete Audit Trail",
-      description:
-        "Track every action, approval, and change with a comprehensive audit trail for transparency and compliance.",
-    },
-    {
-      icon: Users,
-      title: "Role-Based Access",
-      description:
-        "Employees submit expenses, managers review and approve, and admins oversee the entire process with granular permissions.",
-    },
-    {
-      icon: Settings,
-      title: "Custom Approval Flows",
-      description:
-        "Create approval flows with role-based steps, specific approvers, or hybrid approaches tailored to your organization.",
+        "Define multi-step approval chains with manager routing, role-based steps, and conditional auto-approval rules.",
     },
     {
       icon: ShieldCheck,
-      title: "Security & Compliance",
+      title: "Multi-Tenant Security",
       description:
-        "Enterprise-grade security with encrypted data, role-based access control, and compliance-ready audit logs.",
+        "Every query is scoped by company. Zero cross-tenant data access at any layer — API, database, or middleware.",
     },
     {
-      icon: Zap,
-      title: "Fast Processing",
+      icon: BarChart3,
+      title: "Real-time Dashboards",
       description:
-        "Reduce expense processing time from days to hours with automated workflows and intelligent routing.",
+        "Live KPI cards, expense trend charts, and approval queue status — role-specific views for admins, managers, and employees.",
     },
-  ] as FeatureItem[],
-} as const;
-
-
+    {
+      icon: ScrollText,
+      title: "Audit Trail",
+      description:
+        "Every approve, reject, and auto-trigger is logged as an immutable record. Full compliance visibility at every step.",
+    },
+    {
+      icon: ArrowLeftRight,
+      title: "FX Conversion",
+      description:
+        "Automatic currency conversion with live exchange rates. Submit in any currency, approve in your company's default.",
+    },
+  ],
+};

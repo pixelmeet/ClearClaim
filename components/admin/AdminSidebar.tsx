@@ -56,7 +56,7 @@ export function AdminSidebar({ className, onNavigate }: AdminSidebarProps) {
     let animIndex = 0;
 
     return (
-        <div className={cn("w-64 h-full flex flex-col relative bg-card/40 backdrop-blur-3xl border-r border-border/50 shadow-sm", className)}>
+        <div className={cn("w-64 h-full flex flex-col relative bg-sidebar backdrop-blur-2xl border-r border-sidebar-border", className)}>
 
             {/* Soft Sidebar subtle gradient highlight */}
             <div className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-primary/20 to-transparent" />

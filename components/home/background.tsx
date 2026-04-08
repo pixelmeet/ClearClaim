@@ -1,16 +1,51 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 export function Background() {
   return (
-    <div className="absolute inset-0 z-0 opacity-60">
-      <div className="absolute -left-[5%] -top-[10%] w-64 h-64 bg-primary rounded-full mix-blend-multiply filter blur-2xl animate-[blob_18s_ease-in-out_infinite]" />
-      <div className="absolute -right-[5%] top-[20%] w-72 h-72 bg-chart-2 rounded-full mix-blend-multiply filter blur-2xl animate-[blob_22s_ease-in-out_infinite] [animation-delay:2s]" />
-      <div className="absolute -left-[10%] bottom-[15%] w-80 h-80 bg-accent rounded-full mix-blend-multiply filter blur-2xl animate-[blob_26s_ease-in-out_infinite] [animation-delay:4s]" />
-      <div className="absolute right-[10%] bottom-[5%] w-60 h-60 bg-secondary rounded-full mix-blend-multiply filter blur-2xl animate-[blob_20s_ease-in-out_infinite] [animation-delay:6s]" />
-      <div className="absolute left-[20%] top-[10%] w-52 h-52 bg-chart-3 rounded-full mix-blend-multiply filter blur-2xl animate-[blob_24s_ease-in-out_infinite] [animation-delay:8s]" />
-      <div className="absolute right-[15%] top-[50%] w-56 h-56 bg-primary/70 rounded-full mix-blend-multiply filter blur-2xl animate-[blob_28s_ease-in-out_infinite] [animation-delay:10s]" />
-      <div className="absolute left-[5%] top-[55%] w-44 h-44 bg-accent/70 rounded-full mix-blend-multiply filter blur-2xl animate-[blob_30s_ease-in-out_infinite] [animation-delay:12s]" />
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-72 h-72 bg-chart-4 rounded-full mix-blend-multiply filter blur-2xl animate-[blob_26s_ease-in-out_infinite] [animation-delay:14s]" />
+    <div className="absolute inset-0 z-0 overflow-hidden">
+      {/* Grid pattern */}
+      <div className="absolute inset-0 grid-pattern opacity-60" />
+
+      {/* Glowing orbs */}
+      <motion.div
+        className="absolute -left-[15%] -top-[20%] w-[500px] h-[500px] rounded-full bg-primary/20 blur-[120px]"
+        animate={{
+          x: [0, 40, 0],
+          y: [0, 30, 0],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute -right-[10%] top-[10%] w-[400px] h-[400px] rounded-full bg-accent/15 blur-[100px]"
+        animate={{
+          x: [0, -30, 0],
+          y: [0, 40, 0],
+          scale: [1, 0.95, 1],
+        }}
+        transition={{ duration: 25, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute left-[30%] bottom-[10%] w-[350px] h-[350px] rounded-full bg-chart-3/10 blur-[100px]"
+        animate={{
+          x: [0, 20, -20, 0],
+          y: [0, -30, 10, 0],
+        }}
+        transition={{ duration: 30, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute right-[20%] bottom-[30%] w-[300px] h-[300px] rounded-full bg-primary/10 blur-[80px]"
+        animate={{
+          x: [0, -20, 0],
+          y: [0, 20, 0],
+        }}
+        transition={{ duration: 22, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+      />
+
+      {/* Noise texture */}
+      <div className="absolute inset-0 noise-overlay opacity-30" />
     </div>
   );
 }
