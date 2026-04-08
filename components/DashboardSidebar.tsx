@@ -33,6 +33,7 @@ const navSections = [
                 label: 'Dashboard',
                 hrefFn: (role?: UserRole) => {
                     if (role === UserRole.ADMIN) return '/admin';
+                    if (role === UserRole.MANAGER) return '/manager';
                     return '/dashboard';
                 },
                 icon: LayoutDashboard,
@@ -155,7 +156,12 @@ export function DashboardSidebar({ userRole, className, onNavigate }: SidebarPro
                                 <div className="space-y-0.5">
                                     {visibleItems.map((link) => {
                                         const href = link.hrefFn(userRole);
-                                        const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard' && href !== '/admin');
+                                        const isActive =
+                                            pathname === href ||
+                                            (pathname.startsWith(href) &&
+                                                href !== '/dashboard' &&
+                                                href !== '/admin' &&
+                                                href !== '/manager');
                                         return (
                                             <Link key={href} href={href} onClick={onNavigate}>
                                                 <Button

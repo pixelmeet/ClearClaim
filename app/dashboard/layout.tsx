@@ -18,7 +18,7 @@ export default async function DashboardLayout({
     return (
         <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans">
             {/* Command Palette for global access */}
-            <CommandPalette />
+            <CommandPalette userRole={session.role} />
 
             {/* Sidebar Desktop */}
             <div className="hidden md:flex">

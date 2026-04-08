@@ -6,12 +6,7 @@ import { createSessionCookie } from '@/lib/auth/createSessionCookie';
 import { verifyPassword } from '@/lib/auth/verifyPassword';
 import { UserRole } from '@/lib/types';
 import { clientKeyFromRequest, rateLimit } from '@/lib/rateLimit';
-
-const ROLE_REDIRECTS: Record<UserRole, string> = {
-  [UserRole.ADMIN]: '/admin',
-  [UserRole.MANAGER]: '/dashboard',
-  [UserRole.EMPLOYEE]: '/dashboard',
-};
+import { getRoleHomePath } from '@/lib/auth/postLoginRedirect';
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,7 +69,7 @@ export async function POST(req: NextRequest) {
       companyId: user.companyId.toString(),
     });
 
-    const redirectTo = ROLE_REDIRECTS[user.role as UserRole] ?? '/dashboard';
+    const redirectTo = getRoleHomePath(user.role as UserRole);
 
     return NextResponse.json({
       success: true,

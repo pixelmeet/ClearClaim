@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, FileText, PlusCircle, CheckCircle,
   Users, Settings, Search, ArrowRight, Command,
 } from "lucide-react";
+import { UserRole } from "@/lib/types";
+import { getRoleHomePath } from "@/lib/auth/postLoginRedirect";
 
 interface CommandItem {
   id: string;
@@ -14,23 +16,38 @@ interface CommandItem {
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   group: string;
+  /** If set, only shown for these roles. */
+  roles?: UserRole[];
 }
 
-const commands: CommandItem[] = [
-  { id: "dashboard", label: "Dashboard", description: "Overview and KPIs", icon: LayoutDashboard, href: "/dashboard", group: "Navigation" },
-  { id: "expenses", label: "My Expenses", description: "View all expenses", icon: FileText, href: "/dashboard/expenses", group: "Navigation" },
-  { id: "new-expense", label: "New Expense", description: "Submit a new expense", icon: PlusCircle, href: "/dashboard/expenses/new", group: "Actions" },
-  { id: "approvals", label: "Pending Approvals", description: "Review requests", icon: CheckCircle, href: "/manager/approvals", group: "Navigation" },
-  { id: "users", label: "Manage Users", description: "User management", icon: Users, href: "/admin/users", group: "Admin" },
-  { id: "settings", label: "Company Settings", description: "Update preferences", icon: Settings, href: "/admin/company", group: "Admin" },
-];
-
-export function CommandPalette() {
+export function CommandPalette({ userRole }: { userRole?: UserRole }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const commands = useMemo((): CommandItem[] => {
+    const role = userRole ?? UserRole.EMPLOYEE;
+    const home = getRoleHomePath(role);
+    const all: CommandItem[] = [
+      { id: "dashboard", label: "Dashboard", description: "Overview and KPIs", icon: LayoutDashboard, href: home, group: "Navigation" },
+      { id: "expenses", label: "My Expenses", description: "View all expenses", icon: FileText, href: "/dashboard/expenses", group: "Navigation" },
+      { id: "new-expense", label: "New Expense", description: "Submit a new expense", icon: PlusCircle, href: "/dashboard/expenses/new", group: "Actions" },
+      {
+        id: "approvals",
+        label: "Pending Approvals",
+        description: "Review requests",
+        icon: CheckCircle,
+        href: "/manager/approvals",
+        group: "Navigation",
+        roles: [UserRole.MANAGER, UserRole.ADMIN],
+      },
+      { id: "users", label: "Manage Users", description: "User management", icon: Users, href: "/admin/users", group: "Admin", roles: [UserRole.ADMIN] },
+      { id: "settings", label: "Company Settings", description: "Update preferences", icon: Settings, href: "/admin/company", group: "Admin", roles: [UserRole.ADMIN] },
+    ];
+    return all.filter((cmd) => !cmd.roles || cmd.roles.includes(role));
+  }, [userRole]);
 
   const filtered = commands.filter(
     (cmd) =>

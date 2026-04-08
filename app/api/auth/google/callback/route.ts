@@ -3,6 +3,8 @@ import { OAuth2Client } from 'google-auth-library';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
 import { loginUser } from '@/lib/auth';
+import { UserRole } from '@/lib/types';
+import { getRoleHomePath } from '@/lib/auth/postLoginRedirect';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -77,7 +79,8 @@ export async function GET(req: NextRequest) {
             companyId: user.companyId.toString(),
         });
 
-        return NextResponse.redirect(`${app_url}/dashboard`);
+        const home = getRoleHomePath(user.role as UserRole);
+        return NextResponse.redirect(`${app_url}${home}`);
     } catch (error) {
         console.error('Google OAuth Callback Error:', error);
         return NextResponse.redirect(`${app_url}/login?error=oauth_failed`);

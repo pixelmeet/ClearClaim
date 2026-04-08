@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { MobileAdminNav } from '@/components/admin/MobileAdminNav';
 import { UserRole } from '@/lib/types';
+import { getRoleHomePath } from '@/lib/auth/postLoginRedirect';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { LogOut, User as UserIcon, Bell, Command } from 'lucide-react';
@@ -14,8 +15,11 @@ export default async function AdminLayout({
 }) {
     const session = await getSession();
 
-    if (!session || session.role !== UserRole.ADMIN) {
+    if (!session) {
         redirect('/login');
+    }
+    if (session.role !== UserRole.ADMIN) {
+        redirect(getRoleHomePath(session.role as UserRole));
     }
 
     const initials = session.name

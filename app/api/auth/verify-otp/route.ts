@@ -4,6 +4,7 @@ import User from "@/models/User";
 import Company from "@/models/Company";
 import { createSessionCookie } from "@/lib/auth/createSessionCookie";
 import { UserRole } from "@/lib/types";
+import { getRoleHomePath } from "@/lib/auth/postLoginRedirect";
 
 export async function POST(request: Request) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
         companyId: user.companyId.toString(),
       });
 
-      const redirectTo = user.role === UserRole.ADMIN ? "/admin" : "/dashboard";
+      const redirectTo = getRoleHomePath(user.role as UserRole);
       return NextResponse.json(
         { message: "Account verified successfully", redirectTo },
         { status: 200 }

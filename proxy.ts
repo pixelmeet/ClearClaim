@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { UserRole } from '@/lib/types';
+import { getRoleHomePath } from '@/lib/auth/postLoginRedirect';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -44,13 +45,17 @@ export async function proxy(request: NextRequest) {
   // Role Access Control
   if (pathname.startsWith('/admin')) {
     if (payload.role !== UserRole.ADMIN) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(
+        new URL(getRoleHomePath(payload.role as UserRole), request.url)
+      );
     }
   }
 
   if (pathname.startsWith('/manager')) {
     if (payload.role !== UserRole.MANAGER && payload.role !== UserRole.ADMIN) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(
+        new URL(getRoleHomePath(payload.role as UserRole), request.url)
+      );
     }
   }
 

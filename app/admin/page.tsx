@@ -41,7 +41,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Total Users',
             value: analytics.totalUsers,
-            iconName: 'users',
+            iconName: 'users' as const,
             colorClass: 'text-primary',
             bgClass: 'bg-primary/10',
             trend: '+12%',
@@ -50,7 +50,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Managers',
             value: analytics.managers,
-            iconName: 'userCog',
+            iconName: 'userCog' as const,
             colorClass: 'text-accent',
             bgClass: 'bg-accent/10',
             trend: null,
@@ -59,7 +59,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Employees',
             value: analytics.employees,
-            iconName: 'building',
+            iconName: 'building' as const,
             colorClass: 'text-success',
             bgClass: 'bg-success/10',
             trend: null,
@@ -68,7 +68,7 @@ export default async function AdminDashboardPage() {
         {
             title: 'Disabled Accounts',
             value: analytics.disabled,
-            iconName: 'shieldAlert',
+            iconName: 'shieldAlert' as const,
             colorClass: 'text-destructive',
             bgClass: 'bg-destructive/10',
             trend: null,
