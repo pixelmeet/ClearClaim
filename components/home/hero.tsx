@@ -9,7 +9,7 @@ import { useRef } from "react";
 
 export function Hero() {
   return (
-    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden pt-24 md:pt-0">
+    <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden pt-24 md:pt-28 lg:pt-32">
       <Background />
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6 py-16 md:py-0">
