@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { HERO_CONTENT } from "@/constants/home/hero-constants";
 import { Background } from "@/components/home/background";
-import { ArrowRight, Play, DollarSign, CheckCircle2, Clock, TrendingUp } from "lucide-react";
+import { ArrowRight, Play, IndianRupee, CheckCircle2, Clock, TrendingUp } from "lucide-react";
 import { useRef } from "react";
 
 export function Hero() {
@@ -181,7 +181,7 @@ function FloatingDashboard() {
 
           {/* KPI Row */}
           <div className="grid grid-cols-3 gap-3 mb-5">
-            <MiniKPI icon={DollarSign} label="Total Spent" value="$24,580" color="text-primary" bg="bg-primary/10" />
+            <MiniKPI icon={IndianRupee} label="Total Spent" value="₹24,580" color="text-primary" bg="bg-primary/10" />
             <MiniKPI icon={Clock} label="Pending" value="12" color="text-warning" bg="bg-warning/10" />
             <MiniKPI icon={CheckCircle2} label="Approved" value="48" color="text-success" bg="bg-success/10" />
           </div>
@@ -209,9 +209,9 @@ function FloatingDashboard() {
           <div className="glass-panel rounded-xl p-3">
             <div className="text-xs font-medium text-muted-foreground mb-2">Recent Expenses</div>
             {[
-              { name: "Flight to NYC", amount: "$1,250", status: "approved" },
-              { name: "Client Dinner", amount: "$185", status: "pending" },
-              { name: "Software Sub", amount: "$49", status: "approved" },
+              { name: "Flight to NYC", amount: "₹1,250", status: "approved" },
+              { name: "Client Dinner", amount: "₹185", status: "pending" },
+              { name: "Software Sub", amount: "₹49", status: "approved" },
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
                 <span className="text-xs text-foreground/80">{item.name}</span>
@@ -240,7 +240,7 @@ function FloatingDashboard() {
             </div>
             <div>
               <div className="text-[10px] text-muted-foreground">Just approved</div>
-              <div className="text-xs font-semibold text-foreground">$2,450.00</div>
+              <div className="text-xs font-semibold text-foreground">₹2,450.00</div>
             </div>
           </div>
         </motion.div>
