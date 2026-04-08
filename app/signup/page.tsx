@@ -444,6 +444,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
+                            suppressHydrationWarning
                             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -516,6 +517,7 @@ export default function SignupPage() {
             >
               <button 
                 onClick={() => setRequiresOtp(false)}
+                suppressHydrationWarning
                 className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm mb-4"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -569,6 +571,7 @@ export default function SignupPage() {
                     <button
                       onClick={onResendOtp}
                       disabled={resendCooldown > 0}
+                      suppressHydrationWarning
                       className={`font-semibold ${resendCooldown > 0 ? "text-white/20 cursor-not-allowed" : "text-primary hover:underline"}`}
                     >
                       {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
