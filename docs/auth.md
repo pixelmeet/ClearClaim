@@ -251,31 +251,31 @@ import { CreateUserDialog, EditUserDialog } from "@/components/admin/users";
 
 ## Database Configuration
 
-### Supabase Setup (`docs/supabase-sql.md`)
+### MongoDB Setup
 
-**Purpose**: SQL commands to set up the database
+**Purpose**: Configure MongoDB + Mongoose models used by the app.
 
 **Key Components**:
-1. **Role Enum**: `CREATE TYPE app_role AS ENUM ('admin', 'moderator', 'user');`
-2. **Users Table**: Contains all user fields
-3. **RLS Policies**: Row-level security for data access
-4. **Triggers**: Auto-update timestamps
+1. **MongoDB Connection**: `MONGODB_URI` in your environment
+2. **Mongoose Models**: `models/User.ts`, `models/Company.ts`, and related schemas
+3. **Indexes**: Defined in model schema files (for uniqueness/query performance)
+4. **Timestamps**: Managed by Mongoose schema options (`timestamps: true`)
 
 **To Add New Profile Fields**:
-1. Add column to the `CREATE TABLE public.users` statement
+1. Add the field to the corresponding Mongoose schema
 2. Update the `User` interface in `types/user.ts`
 3. Add field definition to `USER_FIELD_DEFS` in `types/user-schema.ts`
 
 **Example - Add Phone Number Field**:
-```sql
--- In CREATE TABLE statement:
-"phoneNumber" text,
+```typescript
+// In models/User.ts schema:
+phoneNumber: { type: String, default: null },
 
--- In types/user.ts:
-phoneNumber?: string;
+// In types/user.ts:
+phoneNumber?: string | null;
 
--- In types/user-schema.ts:
-{ name: "phoneNumber", label: "Phone Number", ui: "text", placeholder: "+1 (555) 123-4567", contexts: ["signup", "profile"], editableInProfile: true },
+// In types/user-schema.ts:
+{ name: "phoneNumber", label: "Phone Number", ui: "text", placeholder: "+1 (555) 123-4567", contexts: ["signup", "profile"], editableInProfile: true }
 ```
 
 ## Customization Examples
@@ -297,10 +297,8 @@ export const ROLE_DEFINITIONS = {
 } as const;
 ```
 
-2. **Update Database** (`docs/supabase-sql.md`):
-```sql
-CREATE TYPE app_role AS ENUM ('admin', 'editor', 'moderator', 'user');
-```
+2. **Update Database Models**:
+- Update Mongoose schema enums in your model files.
 
 3. **Create Editor Page** (`app/editor/page.tsx`):
 ```typescript
