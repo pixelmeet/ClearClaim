@@ -20,13 +20,25 @@ function getTransporter() {
     );
   }
 
+  const host = process.env.EMAIL_HOST;
+  const port = parseInt(process.env.EMAIL_PORT || "587");
+  const user = process.env.EMAIL_USER;
+  let pass = process.env.EMAIL_PASS || "";
+
+  // Gmail app passwords are often pasted with spaces; SMTP expects raw token.
+  if (host?.includes("gmail.com")) {
+    pass = pass.replace(/\s+/g, "");
+  } else {
+    pass = pass.trim();
+  }
+
   transporterInstance = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT || "587"),
-    secure: parseInt(process.env.EMAIL_PORT || "587") === 465,
+    host,
+    port,
+    secure: port === 465,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user,
+      pass,
     },
   });
 
@@ -45,6 +57,7 @@ export async function sendOTPEmail(
 ) {
   try {
     const transporter = getTransporter();
+    await transporter.verify();
     const isSignup = purpose === "signup";
     const subject = isSignup
       ? "Verify Your Account"
@@ -73,10 +86,23 @@ export async function sendOTPEmail(
       `,
     });
 
+    if (!info.accepted || info.accepted.length === 0) {
+      throw new Error(
+        `Email was not accepted by SMTP provider. Rejected: ${info.rejected.join(", ")}`
+      );
+    }
+
     console.log("Message sent successfully: %s", info.messageId);
+    console.log("Email accepted recipients:", info.accepted.join(", "));
+    if (info.rejected.length > 0) {
+      console.warn("Email rejected recipients:", info.rejected.join(", "));
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[DEV] OTP for ${to}: ${otp}`);
+    }
   } catch (error) {
     console.error("Error sending email:", error);
 
-    throw new Error("Failed to send the password reset email.");
+    throw new Error("Failed to send verification email.");
   }
 }

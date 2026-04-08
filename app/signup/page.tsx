@@ -482,6 +482,27 @@ export default function SignupPage() {
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="inviteCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+                        Invite Code (if joining existing company)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter invite code"
+                          className="h-11 bg-white/[0.04] border-white/[0.08] focus:border-primary/50 rounded-xl text-white placeholder:text-white/20 text-sm uppercase"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Terms */}
                 <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/[0.05] flex items-start gap-2.5">
                   <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />

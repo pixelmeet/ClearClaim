@@ -127,9 +127,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // If company exists but no users were created yet (incomplete bootstrap),
+    // allow this signup to become the first ADMIN without invite code.
+    const companyUserCount = await User.countDocuments({ companyId: existingCompany._id });
+    const isBootstrapAdmin = companyUserCount === 0;
+
     // Company exists and this is a fresh employee signup:
     // require invite code before allowing new user creation.
-    if (!inviteCode || inviteCode !== existingCompany.inviteCode) {
+    if (!isBootstrapAdmin && (!inviteCode || inviteCode !== existingCompany.inviteCode)) {
       return NextResponse.json(
         { error: 'Invalid invite code. Ask your company admin for the code.' },
         { status: 403 }
@@ -147,7 +152,7 @@ export async function POST(req: NextRequest) {
       otp,
       otpExpires,
       otpPurpose: 'signup',
-      role: UserRole.EMPLOYEE,
+      role: isBootstrapAdmin ? UserRole.ADMIN : UserRole.EMPLOYEE,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     })) as any;
 
@@ -166,7 +171,9 @@ export async function POST(req: NextRequest) {
       success: true,
       requiresOtp: true,
       email: user.email,
-      message: 'Verification code sent to your email.',
+      message: isBootstrapAdmin
+        ? 'Workspace owner verification code sent to your email.'
+        : 'Verification code sent to your email.',
     });
   } catch (error) {
     if (error instanceof Error) {
