@@ -18,7 +18,9 @@ export async function getMongoDb() {
 
   const client = new MongoClient(mongoUri);
   await client.connect();
-  const db = client.db(process.env.MONGODB_DB_NAME);
+  // Atlas works with either an explicit DB name env var or the DB embedded in the URI.
+  const dbName = process.env.MONGODB_DB_NAME?.trim();
+  const db = dbName ? client.db(dbName) : client.db();
 
   if (process.env.NODE_ENV !== 'production') {
     globalForDb.mongoDb = db;

@@ -34,10 +34,11 @@ async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      // Fail fast in development when Mongo isn't running. This prevents
-      // routes (like notifications polling) from hanging for ~30s.
-      serverSelectionTimeoutMS: 2000,
-      connectTimeoutMS: 2000,
+      // Atlas can take longer than local Mongo on first handshake.
+      // Keep this strict enough to fail fast, but not so low it causes
+      // false negatives on healthy Atlas clusters.
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
