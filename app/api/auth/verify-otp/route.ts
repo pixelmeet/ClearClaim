@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
+import Company from "@/models/Company";
 import { createSessionCookie } from "@/lib/auth/createSessionCookie";
 import { UserRole } from "@/lib/types";
 
@@ -23,6 +24,15 @@ export async function POST(request: Request) {
     }
 
     if (Date.now() > new Date(user.otpExpires).getTime()) {
+      // Enforce "no account without OTP verification" for signup flow.
+      if (flow === "signup") {
+        const companyId = user.companyId;
+        await User.deleteOne({ _id: user._id });
+        const remainingUsers = await User.countDocuments({ companyId });
+        if (remainingUsers === 0) {
+          await Company.deleteOne({ _id: companyId });
+        }
+      }
       return NextResponse.json({ message: "OTP has expired" }, { status: 400 });
     }
 

@@ -91,10 +91,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const existingUser = await User.findOne({
+    let existingUser = await User.findOne({
       companyId: existingCompany._id,
       email: emailLower,
     });
+
+    // Do not keep stale unverified signup accounts.
+    if (
+      existingUser &&
+      existingUser.otpPurpose === 'signup' &&
+      existingUser.otpExpires &&
+      Date.now() > new Date(existingUser.otpExpires).getTime()
+    ) {
+      await User.deleteOne({ _id: existingUser._id });
+      existingUser = null;
+    }
     if (existingUser) {
       if (existingUser.otpPurpose === 'signup') {
         const otp = crypto.randomInt(100000, 999999).toString();
