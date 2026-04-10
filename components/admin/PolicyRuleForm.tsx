@@ -23,6 +23,10 @@ const FIELD_LABELS: Record<string, string> = {
   currency:     'Currency',
 };
 
+const CONDITION_FIELD_OPTIONS = Object.entries(FIELD_LABELS).filter(([field]) =>
+  !['category', 'department', 'employeeId', 'currency'].includes(field)
+);
+
 const OPERATOR_LABELS: Record<string, string> = {
   gt: '>', gte: '≥', lt: '<', lte: '≤', eq: '=', neq: '≠', in: 'is one of',
 };
@@ -256,7 +260,7 @@ export default function PolicyRuleForm({ mode, initialData, ruleId }: PolicyRule
                     onChange={e => updateCondition(i, 'field', e.target.value)}
                     className="flex-[2] h-8 rounded-md border border-border/50 bg-background px-2 text-xs focus:outline-none"
                   >
-                    {Object.entries(FIELD_LABELS).map(([v, l]) => (
+                    {CONDITION_FIELD_OPTIONS.map(([v, l]) => (
                       <option key={v} value={v}>{l}</option>
                     ))}
                   </select>
