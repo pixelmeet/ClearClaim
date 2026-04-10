@@ -2,20 +2,21 @@
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-const data = [
-  { name: "Travel", value: 42, color: "#6366F1" },
-  { name: "Software", value: 28, color: "#8B5CF6" },
-  { name: "Meals", value: 18, color: "#22C55E" },
-  { name: "Office", value: 8, color: "#F59E0B" },
-  { name: "Other", value: 4, color: "#EF4444" },
-];
+export type CategoryPoint = { category: string; amount: number };
 
-function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payload: { name: string; value: number } }[] }) {
+const COLORS = ["#6366F1", "#8B5CF6", "#22C55E", "#F59E0B", "#EF4444", "#06B6D4", "#A3E635", "#F97316"];
+
+function CustomTooltip({
+  active,
+  payload,
+  currency,
+}: { active?: boolean; payload?: { payload: { name: string; value: number; amount: number } }[]; currency: string }) {
   if (active && payload && payload.length) {
     return (
       <div className="glass-panel-strong rounded-lg px-4 py-3 shadow-xl">
-        <p className="text-sm font-bold text-foreground">
-          {payload[0].payload.name}: {payload[0].payload.value}%
+        <p className="text-sm font-bold text-foreground">{payload[0].payload.name}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {currency} {Number(payload[0].payload.amount ?? 0).toLocaleString()} • {payload[0].payload.value}%
         </p>
       </div>
     );
@@ -23,7 +24,21 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
   return null;
 }
 
-export function CategoryChart() {
+export function CategoryChart({ data, currency }: { data: CategoryPoint[]; currency: string }) {
+  const total = data.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+  const chartData = data
+    .filter((d) => d.category)
+    .slice(0, 8)
+    .map((d, i) => {
+      const pct = total > 0 ? Math.round((Number(d.amount) / total) * 100) : 0;
+      return {
+        name: d.category,
+        value: pct,
+        amount: Number(d.amount) || 0,
+        color: COLORS[i % COLORS.length],
+      };
+    });
+
   return (
     <motion.div
       className="glass-panel rounded-2xl p-6"
@@ -41,7 +56,7 @@ export function CategoryChart() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={data}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={50}
@@ -50,18 +65,18 @@ export function CategoryChart() {
                 dataKey="value"
                 stroke="none"
               >
-                {data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip currency={currency} />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
         {/* Legend */}
         <div className="w-full space-y-3">
-          {data.map((item) => (
+          {chartData.map((item) => (
             <div key={item.name} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />

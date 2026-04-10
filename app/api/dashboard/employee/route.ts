@@ -117,13 +117,37 @@ export async function GET() {
       amount: Number(c.amount),
     }));
 
+    const recentExpenses = await Expense.find(
+      { companyId: companyOid, employeeId: employeeOid },
+      { amountCompany: 1, companyCurrency: 1, status: 1, createdAt: 1, description: 1, isAutoApproved: 1 }
+    )
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    const activities = recentExpenses.map((e) => ({
+      id: String(e._id),
+      status: e.status,
+      amount: Number(e.amountCompany ?? 0),
+      currency: e.companyCurrency ?? totals.companyCurrency ?? 'INR',
+      createdAt: e.createdAt instanceof Date ? e.createdAt.toISOString() : new Date(e.createdAt as any).toISOString(),
+      description: e.description ?? '',
+      isAutoApproved: Boolean(e.isAutoApproved),
+      user: session.name ?? 'You',
+    }));
+
     return NextResponse.json({
-      totalExpenses: Number(totals.totalExpenses ?? 0),
+      // preferred (frontend) keys
+      total: Number(totals.totalExpenses ?? 0),
       approved: Number(totals.approved ?? 0),
       pending: Number(totals.pending ?? 0),
       companyCurrency: totals.companyCurrency ?? 'INR',
       monthlyData,
       categoryData,
+      activities,
+
+      // backwards-compatible aliases
+      totalExpenses: Number(totals.totalExpenses ?? 0),
     });
   } catch (error) {
     console.error('GET /api/dashboard/employee error:', error);

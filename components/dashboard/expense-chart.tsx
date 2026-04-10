@@ -4,28 +4,20 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { month: "Jan", amount: 4200 },
-  { month: "Feb", amount: 5800 },
-  { month: "Mar", amount: 4900 },
-  { month: "Apr", amount: 7200 },
-  { month: "May", amount: 6100 },
-  { month: "Jun", amount: 8400 },
-  { month: "Jul", amount: 7300 },
-  { month: "Aug", amount: 9100 },
-  { month: "Sep", amount: 8500 },
-  { month: "Oct", amount: 10200 },
-  { month: "Nov", amount: 9800 },
-  { month: "Dec", amount: 11500 },
-];
+export type MonthlyPoint = { month: string; amount: number };
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  currency,
+}: { active?: boolean; payload?: { value: number }[]; label?: string; currency: string }) {
   if (active && payload && payload.length) {
     return (
       <div className="glass-panel-strong rounded-lg px-4 py-3 shadow-xl">
         <p className="text-xs text-muted-foreground mb-1">{label}</p>
         <p className="text-sm font-bold text-foreground">
-          ${payload[0].value.toLocaleString()}
+          {currency} {Number(payload[0].value ?? 0).toLocaleString()}
         </p>
       </div>
     );
@@ -33,7 +25,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return null;
 }
 
-export function ExpenseChart() {
+export function ExpenseChart({ data, currency }: { data: MonthlyPoint[]; currency: string }) {
   return (
     <motion.div
       className="glass-panel rounded-2xl p-6"
@@ -72,11 +64,10 @@ export function ExpenseChart() {
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 11, fill: '#64748B' }}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-              hide={typeof window !== 'undefined' && window.innerWidth < 640}
-              width={typeof window !== 'undefined' && window.innerWidth < 640 ? 0 : 60}
+              tickFormatter={(v) => `${currency}${(Number(v) / 1000).toFixed(0)}k`}
+              width={60}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip currency={currency} />} />
             <Area
               type="monotone"
               dataKey="amount"

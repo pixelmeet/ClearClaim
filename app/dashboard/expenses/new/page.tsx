@@ -218,6 +218,12 @@ export default function NewExpensePage() {
 
             if (res.ok) {
                 toast.success('Expense submitted!');
+                try {
+                    localStorage.setItem('clearclaim:expenses:changed:v1', String(Date.now()));
+                    window.dispatchEvent(new Event('clearclaim:expenses:changed'));
+                } catch {
+                    // ignore (SSR / privacy mode)
+                }
                 router.push('/dashboard/expenses');
             } else {
                 const data = await res.json();

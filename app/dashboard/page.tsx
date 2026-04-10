@@ -3,12 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { UserRole } from '@/lib/types';
 import { FileText, PlusCircle, ArrowRight } from 'lucide-react';
-import connectToDatabase from '@/lib/db';
-import { getEmployeeExpenseDashboardStats } from '@/lib/services/expenseDashboardStats';
-import { KPICard } from '@/components/dashboard/kpi-card';
-import { ExpenseChart } from '@/components/dashboard/expense-chart';
-import { CategoryChart } from '@/components/dashboard/category-chart';
-import { ActivityFeed } from '@/components/dashboard/activity-feed';
+import { EmployeeDashboardPanels } from '@/components/dashboard/employee-dashboard-panels';
 
 const quickActions = [
   {
@@ -36,44 +31,6 @@ export default async function DashboardPage() {
     redirect('/manager');
   }
 
-  await connectToDatabase();
-
-  const agg = await getEmployeeExpenseDashboardStats(
-    session.companyId,
-    session.userId
-  );
-  const { totalAmount, pendingCount, approvedCount, companyCurrency } = agg;
-
-  const kpiCards = [
-    {
-      title: 'Total Expenses',
-      value: `${companyCurrency} ${totalAmount.toLocaleString()}`,
-      iconName: 'dollarSign' as const,
-      colorClass: 'text-primary',
-      bgClass: 'bg-primary/10',
-      trend: '+12%',
-      trendPositive: true,
-    },
-    {
-      title: 'Pending Approval',
-      value: pendingCount.toString(),
-      iconName: 'clock' as const,
-      colorClass: 'text-warning',
-      bgClass: 'bg-warning/10',
-      trend: null,
-      trendPositive: true,
-    },
-    {
-      title: 'Approved',
-      value: approvedCount.toString(),
-      iconName: 'checkCircle2' as const,
-      colorClass: 'text-success',
-      bgClass: 'bg-success/10',
-      trend: '+24%',
-      trendPositive: true,
-    },
-  ];
-
   return (
     <div className="space-y-8 p-4 sm:p-6 md:p-8 max-w-[1600px] mx-auto min-h-[calc(100vh-3.5rem)]">
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -94,30 +51,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {kpiCards.map((stat, index) => (
-          <KPICard
-            key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            iconName={stat.iconName}
-            colorClass={stat.colorClass}
-            bgClass={stat.bgClass}
-            trend={stat.trend}
-            trendPositive={stat.trendPositive}
-            index={index}
-          />
-        ))}
-      </div>
-
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ExpenseChart />
-        </div>
-        <div>
-          <CategoryChart />
-        </div>
-      </div>
+      <EmployeeDashboardPanels />
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 opacity-0 animate-fade-in-up delay-400">
@@ -151,9 +85,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div>
-          <ActivityFeed />
-        </div>
+        <div />
       </div>
     </div>
   );

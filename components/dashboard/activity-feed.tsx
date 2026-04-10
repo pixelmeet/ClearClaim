@@ -1,15 +1,18 @@
 "use client";
 import { motion } from "framer-motion";
 import { CheckCircle2, XCircle, Clock, Zap } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
-const activities = [
-  { user: "Sarah Chen", action: "approved", amount: "$2,450", time: "2 min ago", type: "approve" },
-  { user: "Mike Johnson", action: "submitted", amount: "$890", time: "15 min ago", type: "submit" },
-  { user: "System", action: "auto-approved", amount: "$49", time: "1 hour ago", type: "auto" },
-  { user: "Lisa Wang", action: "rejected", amount: "$3,200", time: "2 hours ago", type: "reject" },
-  { user: "John Davis", action: "approved", amount: "$1,100", time: "3 hours ago", type: "approve" },
-  { user: "Emily Park", action: "submitted", amount: "$670", time: "5 hours ago", type: "submit" },
-];
+export type ActivityItem = {
+  id: string;
+  user: string;
+  status: string;
+  amount: number;
+  currency: string;
+  createdAt: string;
+  description?: string;
+  isAutoApproved?: boolean;
+};
 
 const iconMap: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bg: string }> = {
   approve: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
@@ -18,7 +21,24 @@ const iconMap: Record<string, { icon: React.ComponentType<{ className?: string }
   auto: { icon: Zap, color: "text-primary", bg: "bg-primary/10" },
 };
 
-export function ActivityFeed() {
+function activityType(a: ActivityItem): keyof typeof iconMap {
+  const s = (a.status || "").toUpperCase();
+  if (a.isAutoApproved) return "auto";
+  if (s === "APPROVED") return "approve";
+  if (s === "REJECTED") return "reject";
+  return "submit";
+}
+
+function activityVerb(a: ActivityItem) {
+  const s = (a.status || "").toUpperCase();
+  if (a.isAutoApproved) return "auto-approved";
+  if (s === "APPROVED") return "approved";
+  if (s === "REJECTED") return "rejected";
+  if (s === "PENDING" || s === "SUBMITTED") return "submitted";
+  return s.toLowerCase() || "updated";
+}
+
+export function ActivityFeed({ activities }: { activities: ActivityItem[] }) {
   return (
     <motion.div
       className="glass-panel rounded-2xl p-6"
@@ -35,12 +55,14 @@ export function ActivityFeed() {
 
       <div className="space-y-1">
         {activities.map((activity, index) => {
-          const config = iconMap[activity.type];
+          const type = activityType(activity);
+          const config = iconMap[type];
           const Icon = config.icon;
+          const time = formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true });
 
           return (
             <motion.div
-              key={index}
+              key={activity.id ?? index}
               className="flex items-center gap-3 py-3 border-b border-border/20 last:border-0 group cursor-default"
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
@@ -52,11 +74,16 @@ export function ActivityFeed() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground">
                   <span className="font-medium">{activity.user}</span>{" "}
-                  <span className="text-muted-foreground">{activity.action}</span>{" "}
-                  <span className="font-semibold text-foreground">{activity.amount}</span>
+                  <span className="text-muted-foreground">{activityVerb(activity)}</span>{" "}
+                  <span className="font-semibold text-foreground">
+                    {activity.currency} {Number(activity.amount ?? 0).toLocaleString()}
+                  </span>
                 </p>
+                {activity.description ? (
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{activity.description}</p>
+                ) : null}
               </div>
-              <span className="text-[10px] text-muted-foreground flex-shrink-0">{activity.time}</span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">{time}</span>
             </motion.div>
           );
         })}
