@@ -1,15 +1,42 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { getSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
+import { cloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
+
+/**
+ * Next.js Route Handlers use the Web Request API (multipart via FormData), not Express `req.file`.
+ * Files are read into a Buffer in memory only — equivalent to multer's `memoryStorage()` (no disk).
+ */
+function uploadBufferToCloudinary(
+  buffer: Buffer,
+  options: { folder: string }
+): Promise<{ secure_url: string; public_id: string }> {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { resource_type: "auto", folder: options.folder },
+      (error, result) => {
+        if (error) reject(error);
+        else if (!result) reject(new Error("Cloudinary returned no result"));
+        else resolve(result as { secure_url: string; public_id: string });
+      }
+    ).end(buffer);
+  });
+}
 
 export async function POST(req: Request) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!isCloudinaryConfigured()) {
+      console.error("Missing Cloudinary env: CLOUD_NAME, API_KEY, API_SECRET");
+      return NextResponse.json(
+        { error: "File upload is not configured" },
+        { status: 503 }
+      );
+    }
 
     const rl = rateLimit(`files-upload:${session.userId}`, 20, 60_000);
     if (!rl.ok) {
@@ -20,48 +47,50 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData();
-
-    const folder = (formData.get("folder") as string) || "uploads";
+    const folder = ((formData.get("folder") as string) || "uploads")
+      .trim()
+      .replace(/^\/+|\/+$/g, "");
 
     const files: File[] = [];
     for (const [key, value] of formData.entries()) {
       if (key === "file" || key.startsWith("file")) {
-        if (value instanceof File) files.push(value);
+        if (value instanceof File && value.size > 0) files.push(value);
       }
     }
 
     if (!files.length) {
-      return NextResponse.json(
-        { message: "No files provided. Use 'file' field(s) in multipart/form-data." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
     const uploads = await Promise.all(
       files.map(async (file) => {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        const uploadDir = path.join(process.cwd(), "public", "uploads", folder);
-        await fs.mkdir(uploadDir, { recursive: true });
-
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        const ext = path.extname(file.name);
-        const filename = `${file.name.replace(ext, "")}-${uniqueSuffix}${ext}`;
-
-        const filePath = path.join(uploadDir, filename);
-
-        await fs.writeFile(filePath, buffer);
-
-        const url = `/uploads/${folder}/${filename}`;
-
-        return { filename: file.name, url, public_id: url };
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const result = await uploadBufferToCloudinary(buffer, { folder });
+        return {
+          filename: file.name,
+          url: result.secure_url,
+          public_id: result.public_id,
+        };
       })
     );
 
-    return NextResponse.json({ uploads }, { status: 200 });
-  } catch (err) {
-    console.error("Upload error:", err);
-    return NextResponse.json({ message: "Upload failed" }, { status: 500 });
+    const first = uploads[0]!;
+
+    return NextResponse.json(
+      {
+        success: true,
+        fileUrl: first.url,
+        publicId: first.public_id,
+        uploads: uploads.map((u) => ({
+          filename: u.filename,
+          url: u.url,
+          public_id: u.public_id,
+        })),
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

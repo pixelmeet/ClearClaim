@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { getSession } from "@/lib/auth";
 import { UserRole } from "@/lib/types";
+import { cloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
 
-const UPLOADS_BASE = path.join(process.cwd(), "public", "uploads");
-
-function resolveSafeUploadDir(folder: string): string | null {
+function sanitizeFolderPrefix(folder: string): string | null {
   const trimmed = folder.trim().replace(/^\/+/, "").replace(/\/+$/, "");
   if (!trimmed || trimmed.includes("..")) {
     return null;
   }
-  const target = path.resolve(UPLOADS_BASE, ...trimmed.split(path.sep).filter(Boolean));
-  const baseResolved = path.resolve(UPLOADS_BASE);
-  const rel = path.relative(baseResolved, target);
-  if (rel.startsWith("..") || path.isAbsolute(rel)) {
+  if (trimmed.split("/").some((segment) => segment === "..")) {
     return null;
   }
-  return target;
+  return trimmed;
 }
 
 export async function POST(req: Request) {
@@ -33,19 +27,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "folder is required" }, { status: 400 });
     }
 
-    const targetDir = resolveSafeUploadDir(folder);
-    if (!targetDir) {
+    const prefix = sanitizeFolderPrefix(folder);
+    if (!prefix) {
       return NextResponse.json({ message: "Invalid folder path" }, { status: 400 });
     }
 
-    await fs.rm(targetDir, { recursive: true, force: true });
+    if (!isCloudinaryConfigured()) {
+      console.error("Missing Cloudinary env: CLOUD_NAME, API_KEY, API_SECRET");
+      return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      cloudinary.api.delete_resources_by_prefix(prefix, (error: unknown) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
 
     return NextResponse.json({ result: "ok" }, { status: 200 });
-  } catch (err) {
-    console.error("Delete folder error:", err);
-    return NextResponse.json(
-      { message: "Delete folder failed" },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Delete folder failed" }, { status: 500 });
   }
 }

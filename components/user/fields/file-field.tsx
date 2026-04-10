@@ -46,8 +46,12 @@ export function FileField<T extends FieldValues>({
         body: formData,
       });
       const data = await res.json();
-      const url = data?.uploads?.[0]?.url as string | undefined;
-      const publicId = data?.uploads?.[0]?.public_id as string | undefined;
+      const url =
+        (data?.fileUrl as string | undefined) ??
+        (data?.uploads?.[0]?.url as string | undefined);
+      const publicId =
+        (data?.publicId as string | undefined) ??
+        (data?.uploads?.[0]?.public_id as string | undefined);
       
       if (url && onFileUpload) {
         onFileUpload(url, publicId || "");

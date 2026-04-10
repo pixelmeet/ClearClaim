@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { getSession } from "@/lib/auth";
+import { cloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
 
 export async function POST(req: Request) {
   try {
@@ -14,15 +13,18 @@ export async function POST(req: Request) {
     }
 
     if (publicId.startsWith("/uploads/")) {
-      const filePath = path.join(process.cwd(), "public", publicId);
-      await fs.unlink(filePath).catch((e) => {
-        console.error("Failed to delete file from disk:", e);
-      });
+      return NextResponse.json({ result: "ok" }, { status: 200 });
     }
 
+    if (!isCloudinaryConfigured()) {
+      console.error("Missing Cloudinary env: CLOUD_NAME, API_KEY, API_SECRET");
+      return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
+    }
+
+    await cloudinary.uploader.destroy(publicId);
     return NextResponse.json({ result: "ok" }, { status: 200 });
-  } catch (err) {
-    console.error("Delete file error:", err);
+  } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: "Delete failed" }, { status: 500 });
   }
 }

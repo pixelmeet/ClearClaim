@@ -117,7 +117,7 @@ export default function NewExpensePage() {
         }
 
         const data = await res.json();
-        const url = data?.uploads?.[0]?.url;
+        const url = data?.fileUrl ?? data?.uploads?.[0]?.url;
         if (!url || typeof url !== 'string') {
             throw new Error('Receipt upload did not return a URL');
         }
