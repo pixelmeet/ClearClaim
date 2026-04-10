@@ -6,6 +6,7 @@ import Expense from '@/models/Expense';
 import { ExpenseStatus } from '@/lib/types';
 
 type MonthlyRow = { _id: { year: number; month: number }; amount: number };
+type WeeklyRow = { _id: { isoYear: number; isoWeek: number }; amount: number };
 type CategoryRow = { _id: string; amount: number };
 
 const pendingStatuses = [ExpenseStatus.PENDING, ExpenseStatus.SUBMITTED];
@@ -14,6 +15,17 @@ function monthLabel(year: number, month1to12: number) {
   // Use a stable UTC date to avoid TZ drift.
   const d = new Date(Date.UTC(year, month1to12 - 1, 1));
   return d.toLocaleString('en-US', { month: 'short' });
+}
+
+function getIsoWeekYear(dateInput: Date) {
+  const date = new Date(Date.UTC(dateInput.getUTCFullYear(), dateInput.getUTCMonth(), dateInput.getUTCDate()));
+  // Move to Thursday in current week to determine ISO year.
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const isoYear = date.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const isoWeek = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return { isoYear, isoWeek };
 }
 
 export async function GET() {
@@ -29,10 +41,13 @@ export async function GET() {
     const now = new Date();
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     start.setUTCMonth(start.getUTCMonth() - 11); // last 12 months incl current
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(weekStart.getUTCDate() - 7 * 7); // last 8 weeks incl current
 
     const [row] = await Expense.aggregate<{
       totals: Array<{ totalExpenses: number; approved: number; pending: number; companyCurrency: string }>;
       monthly: MonthlyRow[];
+      weekly: WeeklyRow[];
       category: CategoryRow[];
     }>([
       {
@@ -74,6 +89,19 @@ export async function GET() {
               },
             },
             { $sort: { '_id.year': 1, '_id.month': 1 } },
+          ],
+          weekly: [
+            { $match: { expenseDate: { $gte: weekStart, $lte: now } } },
+            {
+              $group: {
+                _id: {
+                  isoYear: { $isoWeekYear: '$expenseDate' },
+                  isoWeek: { $isoWeek: '$expenseDate' },
+                },
+                amount: { $sum: '$amountCompany' },
+              },
+            },
+            { $sort: { '_id.isoYear': 1, '_id.isoWeek': 1 } },
           ],
           category: [
             {
@@ -117,6 +145,24 @@ export async function GET() {
       amount: Number(c.amount),
     }));
 
+    const weeklyMap = new Map<string, number>();
+    for (const w of row?.weekly ?? []) {
+      const key = `${w._id.isoYear}-${String(w._id.isoWeek).padStart(2, '0')}`;
+      weeklyMap.set(key, Number(w.amount ?? 0));
+    }
+
+    const weeklyData: Array<{ week: string; amount: number }> = [];
+    const weekCursor = new Date(weekStart);
+    for (let i = 0; i < 8; i++) {
+      const { isoYear, isoWeek } = getIsoWeekYear(weekCursor);
+      const key = `${isoYear}-${String(isoWeek).padStart(2, '0')}`;
+      weeklyData.push({
+        week: `W${String(isoWeek).padStart(2, '0')}`,
+        amount: Number(weeklyMap.get(key) ?? 0),
+      });
+      weekCursor.setUTCDate(weekCursor.getUTCDate() + 7);
+    }
+
     const recentExpenses = await Expense.find(
       { companyId: companyOid, employeeId: employeeOid },
       { amountCompany: 1, companyCurrency: 1, status: 1, createdAt: 1, description: 1, isAutoApproved: 1 }
@@ -143,6 +189,7 @@ export async function GET() {
       pending: Number(totals.pending ?? 0),
       companyCurrency: totals.companyCurrency ?? 'INR',
       monthlyData,
+      weeklyData,
       categoryData,
       activities,
 

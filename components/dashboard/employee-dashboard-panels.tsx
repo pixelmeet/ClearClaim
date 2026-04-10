@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { KPICard } from "@/components/dashboard/kpi-card";
-import { ExpenseChart, type MonthlyPoint } from "@/components/dashboard/expense-chart";
+import { ExpenseChart, type MonthlyPoint, type WeeklyPoint } from "@/components/dashboard/expense-chart";
 import { CategoryChart, type CategoryPoint } from "@/components/dashboard/category-chart";
 import { ActivityFeed, type ActivityItem } from "@/components/dashboard/activity-feed";
 import { SkeletonCard, SkeletonChart, SkeletonTable } from "@/components/dashboard/skeleton-loader";
@@ -14,6 +14,7 @@ type EmployeeDashboardResponse = {
   pending: number;
   companyCurrency: string;
   monthlyData: MonthlyPoint[];
+  weeklyData: WeeklyPoint[];
   categoryData: CategoryPoint[];
   activities: ActivityItem[];
 };
@@ -157,7 +158,11 @@ export function EmployeeDashboardPanels() {
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ExpenseChart data={data?.monthlyData ?? []} currency={currency} />
+          <ExpenseChart
+            monthlyData={data?.monthlyData ?? []}
+            weeklyData={data?.weeklyData ?? []}
+            currency={currency}
+          />
         </div>
         <div>
           <CategoryChart data={data?.categoryData ?? []} currency={currency} />

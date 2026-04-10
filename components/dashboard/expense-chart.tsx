@@ -1,10 +1,12 @@
 "use client";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 export type MonthlyPoint = { month: string; amount: number };
+export type WeeklyPoint = { week: string; amount: number };
 
 function CustomTooltip({
   active,
@@ -25,7 +27,25 @@ function CustomTooltip({
   return null;
 }
 
-export function ExpenseChart({ data, currency }: { data: MonthlyPoint[]; currency: string }) {
+type ViewMode = "monthly" | "weekly";
+
+export function ExpenseChart({
+  monthlyData,
+  weeklyData,
+  currency,
+}: {
+  monthlyData: MonthlyPoint[];
+  weeklyData: WeeklyPoint[];
+  currency: string;
+}) {
+  const [viewMode, setViewMode] = useState<ViewMode>("monthly");
+
+  const chartData = useMemo(
+    () => (viewMode === "weekly" ? weeklyData : monthlyData),
+    [viewMode, weeklyData, monthlyData]
+  );
+  const xAxisKey = viewMode === "weekly" ? "week" : "month";
+
   return (
     <motion.div
       className="glass-panel rounded-2xl p-6"
@@ -36,17 +56,39 @@ export function ExpenseChart({ data, currency }: { data: MonthlyPoint[]; currenc
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-foreground font-display">Expense Trends</h3>
-          <p className="text-xs text-muted-foreground mt-1">Monthly spend over the last 12 months</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {viewMode === "weekly" ? "Weekly spend over the last 8 weeks" : "Monthly spend over the last 12 months"}
+          </p>
         </div>
         <div className="flex gap-2">
-          <span className="px-3 py-1 rounded-lg glass-panel text-xs font-medium text-primary cursor-pointer">Monthly</span>
-          <span className="px-3 py-1 rounded-lg text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors">Weekly</span>
+          <button
+            type="button"
+            onClick={() => setViewMode("monthly")}
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              viewMode === "monthly"
+                ? "glass-panel text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("weekly")}
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              viewMode === "weekly"
+                ? "glass-panel text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Weekly
+          </button>
         </div>
       </div>
 
       <div className="h-48 sm:h-64 lg:h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
             <defs>
               <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#6366F1" stopOpacity={0.3} />
@@ -55,7 +97,7 @@ export function ExpenseChart({ data, currency }: { data: MonthlyPoint[]; currenc
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
-              dataKey="month"
+              dataKey={xAxisKey}
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 11, fill: '#64748B' }}
