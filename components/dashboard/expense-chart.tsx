@@ -7,6 +7,7 @@ import {
 
 export type MonthlyPoint = { month: string; amount: number };
 export type WeeklyPoint = { week: string; amount: number };
+type ChartPoint = { label: string; amount: number };
 
 function CustomTooltip({
   active,
@@ -40,11 +41,13 @@ export function ExpenseChart({
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("monthly");
 
-  const chartData = useMemo(
-    () => (viewMode === "weekly" ? weeklyData : monthlyData),
+  const chartData = useMemo<ChartPoint[]>(
+    () =>
+      viewMode === "weekly"
+        ? weeklyData.map((point) => ({ label: point.week, amount: point.amount }))
+        : monthlyData.map((point) => ({ label: point.month, amount: point.amount })),
     [viewMode, weeklyData, monthlyData]
   );
-  const xAxisKey = viewMode === "weekly" ? "week" : "month";
 
   return (
     <motion.div
@@ -97,7 +100,7 @@ export function ExpenseChart({
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
-              dataKey={xAxisKey}
+              dataKey="label"
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 11, fill: '#64748B' }}
