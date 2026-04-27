@@ -4,6 +4,13 @@ import { rateLimit } from "@/lib/rateLimit";
 import { cloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
+const MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+]);
 
 /**
  * Next.js Route Handlers use the Web Request API (multipart via FormData), not Express `req.file`.
@@ -31,7 +38,7 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     if (!isCloudinaryConfigured()) {
-      console.error("Missing Cloudinary env: CLOUD_NAME, API_KEY, API_SECRET");
+      console.error("Missing Cloudinary env: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
       return NextResponse.json(
         { error: "File upload is not configured" },
         { status: 503 }
@@ -64,6 +71,12 @@ export async function POST(req: Request) {
 
     const uploads = await Promise.all(
       files.map(async (file) => {
+        if (!ALLOWED_TYPES.has(file.type)) {
+          throw new Error(`Unsupported file type: ${file.type || "unknown"}`);
+        }
+        if (file.size > MAX_UPLOAD_SIZE) {
+          throw new Error("File too large (max 20 MB)");
+        }
         const buffer = Buffer.from(await file.arrayBuffer());
         const result = await uploadBufferToCloudinary(buffer, { folder });
         return {
@@ -90,7 +103,9 @@ export async function POST(req: Request) {
       { status: 200 }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Upload failed";
+    const status = /too large/i.test(message) ? 413 : /Unsupported file type/i.test(message) ? 415 : 500;
     console.error(error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status });
   }
 }

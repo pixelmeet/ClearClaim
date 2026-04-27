@@ -5,6 +5,12 @@ import User from '@/models/User';
 import { canUserActOnExpense } from '@/lib/approvalEngine';
 import { getSession } from '@/lib/auth';
 import { ExpenseStatus, UserRole } from '@/lib/types';
+import mongoose from 'mongoose';
+import { paginationMeta, parsePagination } from '@/lib/pagination';
+
+function escapeRegex(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,9 +22,7 @@ export async function GET(req: NextRequest) {
         if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
         const { searchParams } = new URL(req.url);
-        const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
-        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
-        const skip = (page - 1) * limit;
+        const { page, limit, skip } = parsePagination(searchParams);
 
         const filter: Record<string, any> = {
             companyId: session.companyId,
@@ -29,33 +33,31 @@ export async function GET(req: NextRequest) {
         if (category) filter.category = category;
 
         const search = searchParams.get('search');
-        if (search) filter.description = { $regex: search, $options: 'i' };
+        if (search) filter.description = { $regex: escapeRegex(search), $options: 'i' };
 
-        const candidates = await Expense.find(filter)
-            .populate('employeeId', 'name email managerId')
-            .sort({ createdAt: -1 });
-
-        const pending = [];
-        for (const expense of candidates) {
-            // canUserActOnExpense now reads from resolvedChain — no flow lookup needed
-            const canAct = canUserActOnExpense(user, expense);
-            if (canAct || session.role === UserRole.ADMIN) {
-                pending.push(expense);
-            }
+        if (session.role !== UserRole.ADMIN) {
+            filter.$or = [
+                { currentApproverId: new mongoose.Types.ObjectId(session.userId) },
+                { 'resolvedChain.approverId': session.userId },
+            ];
         }
 
-        const total = pending.length;
-        const paginated = pending.slice(skip, skip + limit);
+        const [candidates, total] = await Promise.all([
+            Expense.find(filter)
+                .populate('employeeId', 'name email managerId')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            Expense.countDocuments(filter),
+        ]);
+
+        const paginated = session.role === UserRole.ADMIN
+            ? candidates
+            : candidates.filter((expense) => canUserActOnExpense(user, expense));
 
         return NextResponse.json({
             expenses: paginated,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-                hasNextPage: page * limit < total,
-            },
+            pagination: paginationMeta(page, limit, total),
         });
     } catch (error) {
         console.error('Pending fetch error:', error);

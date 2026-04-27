@@ -42,6 +42,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
+    if (user.isDisabled) {
+      return NextResponse.json(
+        { error: 'Your account has been disabled. Contact your administrator.' },
+        { status: 403 }
+      );
+    }
+
     if (user.otpPurpose === 'signup') {
       return NextResponse.json(
         { error: 'Please verify your account with OTP before logging in.' },

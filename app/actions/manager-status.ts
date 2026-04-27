@@ -1,9 +1,9 @@
 "use server";
 
 import { getCurrentUserAction } from "./auth";
-import { getApprovalFlow } from "@/lib/approvalEngine";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
+import PolicyRule, { StepApproverType } from "@/models/PolicyRule";
 
 export async function getManagerStatusAction() {
   const session = await getCurrentUserAction();
@@ -20,13 +20,17 @@ export async function getManagerStatusAction() {
       return { success: false, error: "User not found" };
     }
 
-    // 2. Check if manager-first approval is enabled for the company
-    const flow = await getApprovalFlow(session.companyId);
+    // 2. Check if any active policy includes manager approval steps
+    const managerStepRule = await PolicyRule.findOne({
+      companyId: session.companyId,
+      active: true,
+      "steps.approverType": StepApproverType.MANAGER,
+    }).select("_id");
     
     return {
       success: true,
       hasManager: !!user.managerId,
-      isManagerFirstEnabled: !!flow?.isManagerApprover,
+      isManagerFirstEnabled: !!managerStepRule,
     };
   } catch (error) {
     console.error("Error in getManagerStatusAction:", error);

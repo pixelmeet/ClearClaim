@@ -1,0 +1,591 @@
+ClearClaim
+Full Code Audit Report — Product Requirements & Findings
+github.com/pixelmeet/ClearClaim
+Overall Quality Score: 5.5 / 10   —   Production Ready? NO — 12 Blockers
+4
+Critical Issues
+8
+High Issues
+11
+Medium Issues
+217
+Source Files
+40
+API Routes
+2
+Test Files
+1. Project Overview
+ClearClaim is a multi-tenant SaaS expense management system. Companies sign up, employees submit expenses, and managers/admins approve them through configurable policy-based approval chains. It features OCR receipt scanning, FX conversion, email notifications, and a Google OAuth flow.
+1.1 Technology Stack
+Category
+Technology
+Frontend
+Next.js 16 (App Router), React 19, Tailwind CSS 4, Recharts
+Language
+TypeScript 5
+Database
+MongoDB / Mongoose 9
+Auth
+Jose (JWT), HttpOnly Cookies, bcryptjs, Google OAuth
+Storage
+Cloudinary
+AI / OCR
+Gemini 1.5 Flash (primary) + Groq (fallback)
+Email
+Nodemailer
+Validation
+Zod 4
+1.2 Architecture Summary
+•  Monolithic Next.js application — API routes serve as backend
+•  Authentication via HttpOnly JWT cookie with 24-hour expiry
+•  Three user roles: ADMIN, MANAGER, EMPLOYEE
+•  Multi-tenancy enforced by companyId scoping on every database query
+•  PolicyRule engine selects approval chain at submission time and snapshots it on the Expense document
+•  OCR pipeline: Gemini 1.5 Flash as primary, Groq as automatic fallback
+•  217 source files | 40 API routes | 2 test files
+2. Critical Issues
+The following 4 issues are production blockers. The application MUST NOT be deployed until all 4 are resolved.
+2.1 Middleware Not Active — Entire Auth is Bypassable
+[CRITICAL]  Middleware is NOT active — entire auth is bypassable
+📁 proxy.ts (should be middleware.ts)
+The route protection logic lives in proxy.ts but Next.js only executes route protection from a file named middleware.ts at the project root. Currently, every protected route (/admin, /manager, /dashboard) is publicly accessible without any authentication. Any unauthenticated user can navigate to /admin directly in the browser.
+✅ FIX: Rename proxy.ts to middleware.ts and export as default
+// 1. Rename proxy.ts → middleware.ts
+// 2. Export the function as default (Next.js requirement):
+ 
+export default async function middleware(request: NextRequest) {
+  return proxy(request);
+}
+// The config export is already correct — keep it as-is.
+2.2 Disabled Users Can Still Log In
+[CRITICAL]  Disabled users can still log in and use the app
+📁 app/api/auth/login/route.ts (line ~40)
+The login route fetches the user and verifies their password, but never checks user.isDisabled. An admin can disable an employee via the UI, but that employee can still authenticate and access all their data. The same gap exists in the Google OAuth callback.
+✅ FIX: Add isDisabled check after fetching user
+const user = await User.findOne({ email: emailLower });
+if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+ 
+// ADD THIS CHECK:
+if (user.isDisabled) {
+  return NextResponse.json(
+    { error: 'Your account has been disabled. Contact your administrator.' },
+    { status: 403 }
+  );
+}
+// Also add the same check in app/api/auth/google/callback/route.ts
+// before calling loginUser()
+2.3 Google OAuth Exposes googleId in URL Query Params
+[CRITICAL]  Google OAuth exposes googleId in plain URL query params
+📁 app/api/auth/google/callback/route.ts (line ~67)
+After Google OAuth the callback redirects to /signup/google-complete?email=...&name=...&googleId=sub_12345. The googleId (Google sub) is the primary identity anchor for the account. Exposing it in the URL means it leaks into browser history, server logs, referrer headers, and analytics tools. An attacker who intercepts this can attempt account linking.
+✅ FIX: Use encrypted short-lived server-side state (Redis cookie)
+// In callback/route.ts — store state in a short-lived cookie instead:
+const state = crypto.randomBytes(32).toString('hex');
+await redis.set('oauth_state:' + state, JSON.stringify({ email, name, googleId }), 'EX', 600);
+ 
+const response = NextResponse.redirect(app_url + '/signup/google-complete');
+response.cookies.set('oauth_state', state, { httpOnly: true, maxAge: 600 });
+return response;
+ 
+// In /api/auth/google/complete — read from cookie:
+const state = req.cookies.get('oauth_state')?.value;
+const data = await redis.get('oauth_state:' + state); // retrieve and delete
+2.4 No File Size Limit on OCR Endpoint — DoS / Cost Bomb
+[CRITICAL]  No file size limit on OCR endpoint (DoS / cost bomb)
+📁 app/api/ocr/route.ts
+The OCR route reads the entire uploaded file into memory (file.arrayBuffer()) with no size check. A malicious authenticated user can upload a 500 MB file, exhausting server memory and incurring Gemini/Groq API costs. The file upload endpoint (/api/files/upload) has the same issue — no file size or MIME type whitelist enforcement.
+✅ FIX: Add file size and MIME type validation before processing
+// app/api/ocr/route.ts — add before arrayBuffer():
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+if (!file || !file.type.startsWith('image/')) {
+  return NextResponse.json({ error: 'Valid image required' }, { status: 400 });
+}
+if (file.size > MAX_SIZE) {
+  return NextResponse.json({ error: 'File too large (max 10 MB)' }, { status: 413 });
+}
+ 
+// app/api/files/upload/route.ts — whitelist MIME types:
+const ALLOWED_TYPES = ['image/jpeg','image/png','image/webp','application/pdf'];
+if (!ALLOWED_TYPES.includes(file.type)) {
+  return NextResponse.json({ error: 'File type not allowed' }, { status: 415 });
+}
+if (file.size > 20 * 1024 * 1024) {
+  return NextResponse.json({ error: 'File too large (max 20 MB)' }, { status: 413 });
+}
+3. High Priority Issues
+The following 8 issues are high-priority and must be resolved before production deployment.
+3.1 File Delete Has No Ownership Check
+[HIGH]  File delete has no ownership check — any user can delete any file
+📁 app/api/files/delete/route.ts
+The delete endpoint only checks that the caller is authenticated, then destroys whatever publicId is sent. Any employee can delete another employee's or another company's receipt by sending a known Cloudinary public_id. There is no check that the publicId belongs to the requesting user's expense.
+✅ FIX: Scope deletion to user's own expenses before Cloudinary call
+// Before calling cloudinary.uploader.destroy:
+const expense = await Expense.findOne({
+  receiptUrl: { $regex: publicId },
+  companyId: session.companyId,
+  ...(session.role === UserRole.EMPLOYEE ? { employeeId: session.userId } : {}),
+});
+if (!expense) {
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+}
+3.2 Manager Approvals Route Loads ALL Expenses Into Memory
+[HIGH]  Manager approvals route loads ALL company pending expenses into memory before filtering
+📁 app/api/manager/approvals/route.ts (line 34)
+The route fetches every pending/submitted expense for the company, then filters in JS using canUserActOnExpense(). At scale (1000+ expenses), this runs massive DB queries on every page load, loads the full dataset into Node.js memory, and true DB-level pagination is broken.
+✅ FIX: Store currentApproverId in DB for efficient querying
+// Add to Expense schema:
+currentApproverId: { type: Schema.Types.ObjectId, ref: 'User', default: null }
+ 
+// In approvalEngine.ts — set when advancing:
+expense.currentApproverId = new mongoose.Types.ObjectId(step.approverId);
+ 
+// In manager/approvals route — query directly:
+const filter = {
+  companyId: session.companyId,
+  status: { $in: [ExpenseStatus.PENDING, ExpenseStatus.SUBMITTED] },
+  $or: [
+    { 'resolvedChain.approverId': session.userId },
+    { currentApproverId: session.userId },
+  ]
+};
+3.3 In-Memory Rate Limiter Resets on Every Serverless Cold Start
+[HIGH]  In-memory rate limiter resets on every serverless cold start
+📁 lib/rateLimit.ts
+The buckets Map is process-scoped. On Vercel/serverless, each function instance has its own map, so an attacker hitting different instances bypasses the limit entirely. This affects login (brute-force), signup (spam), and OTP verification. The OTP route has no rate limiting at all.
+✅ FIX: Use Redis-backed rate limiting via @upstash/ratelimit
+// Install: npm i @upstash/ratelimit @upstash/redis
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+ 
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, '15m'),
+});
+ 
+// Also add rate limiting to verify-otp route:
+const rl = rateLimit('otp:' + email, 5, 15 * 60 * 1000); // 5 tries / 15 min
+if (!rl.ok) return NextResponse.json({ message: 'Too many attempts' }, { status: 429 });
+3.4 OTP Compared With Plain String Equality — Timing Attack
+[HIGH]  OTP compared with plain string equality — timing attack possible
+📁 app/api/auth/verify-otp/route.ts (line 40)
+OTP verification uses user.otp !== otp, which is a non-constant-time comparison. An attacker measuring response timing can potentially determine correct OTP prefix character-by-character. While OTPs are short-lived, this is still bad practice for authentication codes.
+✅ FIX: Use crypto.timingSafeEqual for constant-time comparison
+import { timingSafeEqual } from 'crypto';
+ 
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+ 
+// Replace: if (user.otp !== otp)
+if (!safeCompare(user.otp!, otp)) {
+  return NextResponse.json({ message: 'Invalid OTP' }, { status: 400 });
+}
+3.5 Cloudinary Env Var Names Are Dangerously Generic
+[HIGH]  Cloudinary env var names are dangerously generic (API_KEY, API_SECRET)
+📁 lib/cloudinary.ts
+process.env.API_KEY and process.env.API_SECRET are extremely generic names that will clash with any other service's env vars (Stripe, Twilio, etc.). Standard practice is CLOUDINARY_API_KEY.
+✅ FIX: Rename to CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+// lib/cloudinary.ts
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+3.6 minApprovalPercent Counts Auto-Approved Steps — Breaking Threshold Logic
+[HIGH]  minApprovalPercent counts auto-approved steps, breaking threshold logic
+📁 lib/approvalEngine.ts (line 133–139)
+When minApprovalPercent > 0, the code counts all ApprovalAction records with action: APPROVE including auto-approved steps, causing incorrect threshold calculations. The denominator should be human-reviewable steps only.
+✅ FIX: Filter out auto-approved steps from denominator
+// Count only human-approver actions (exclude auto-approved comments):
+const approvedCount = await ApprovalAction.countDocuments({
+  expenseId: expense._id,
+  action: ActionType.APPROVE,
+  comment: { $not: /^\[AUTO-APPROVED/ },
+});
+const humanSteps = chain.filter(s => !s.autoApprove).length;
+const pct = humanSteps > 0 ? (approvedCount / humanSteps) * 100 : 100;
+3.7 Bulk Approval Action Field Not Validated
+[HIGH]  Bulk approval action field not validated — any string accepted
+📁 app/api/manager/approvals/bulk-action/route.ts (line 26)
+The bulk action route destructures { expenseIds, action, comment } from the body with no Zod validation. The action field is passed directly to applyApprovalAction(). Garbage data can reach core business logic.
+✅ FIX: Add Zod schema validation matching ProcessApprovalSchema pattern
+const BulkActionSchema = z.object({
+  expenseIds: z.array(z.string().min(24)).min(1).max(50),
+  action: z.enum([ActionType.APPROVE, ActionType.REJECT]),
+  comment: z.string().optional(),
+});
+const parsed = BulkActionSchema.safeParse(body);
+if (!parsed.success) {
+  return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+}
+3.8 FX Rate Cached Indefinitely — Financial Data Can Be Months Stale
+[HIGH]  FX rate cached indefinitely — financial data can be months stale
+📁 app/api/expenses/route.ts (line ~115) + models/FxRate.ts
+When the live FX API fails, the code falls back to cached rate from FxRate collection. The fetchedAt field is stored but never checked for staleness. A rate cached 6 months ago will be used silently, causing incorrect expense amounts to be recorded permanently.
+✅ FIX: Add staleness check with 24-hour maximum cache age
+const cached = await FxRate.findOne({
+  fromCurrency: currencyOriginal,
+  toCurrency: company.defaultCurrency,
+});
+const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+if (!cached || Date.now() - cached.fetchedAt.getTime() > MAX_CACHE_AGE_MS) {
+  return NextResponse.json(
+    { error: 'Currency conversion unavailable. Please try again later.' },
+    { status: 503 }
+  );
+}
+4. Security Findings
+The following 6 security findings range from HIGH to LOW severity. All should be addressed before production.
+4.1 ReDoS via Unescaped Regex Search
+[HIGH]  Regex search on description is a ReDoS vector
+📁 app/api/expenses/route.ts (line 51)
+User-supplied search param is used directly in { $regex: search, $options: 'i' }. A malicious input like (a+)+$ causes catastrophic backtracking in MongoDB's regex engine, potentially locking the database thread for seconds.
+✅ FIX: Escape regex special characters before querying
+function escapeRegex(s) {
+  // escape special regex chars
+  return s.replace(/special-chars/, c => '\\' + c);
+}
+// Usage:
+if (search) filter.description = { $regex: escapeRegex(search), $options: i };
+4.2 Password Minimum is Only 6 Characters
+[MEDIUM]  Password minimum is only 6 chars — far too weak
+📁 lib/validation.ts (LoginSchema, SignupSchema)
+The minimum password length is 6 characters with no complexity requirements. NIST SP 800-63B recommends minimum 8 characters (12+ preferred). This is a financial application handling real money amounts.
+✅ FIX: Enforce 8-character minimum with complexity requirements
+password: z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Must contain an uppercase letter')
+  .regex(/[0-9]/, 'Must contain a number'),
+4.3 Real Receipts Committed to Public Git Repository
+[MEDIUM]  Real receipts committed to public git repo
+📁 public/uploads/receipts/
+The repository contains actual WhatsApp-named receipt images (e.g., WhatsApp Image 2026-03-28 at 12.17.45 AM-*.jpeg) committed to public/uploads/receipts/. These may contain PII and financial information and are publicly accessible on GitHub.
+✅ FIX: Remove from git history and add to .gitignore
+# Remove from git history:
+git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch public/uploads/receipts/*" \
+  --prune-empty --tag-name-filter cat -- --all
+ 
+# Add to .gitignore:
+public/uploads/
+4.4 Forgot-Password Has No Rate Limiting
+[MEDIUM]  Forgot-password has no rate limiting — email enumeration and spam
+📁 app/api/auth/forgot-password/route.ts
+The forgot-password endpoint has no rate limit. An attacker can spam any email with OTP emails or enumerate which emails are registered by measuring response time differences.
+✅ FIX: Add rate limiting to forgot-password endpoint
+const rl = rateLimit('forgot-pwd:' + email, 3, 15 * 60 * 1000);
+if (!rl.ok) return NextResponse.json({ message: 'If an account exists, an OTP has been sent.' }, { status: 200 });
+// Note: always return 200 regardless — already doing this correctly.
+4.5 Admin Override Endpoint Doesn't Use OverrideApprovalSchema
+[MEDIUM]  Admin override endpoint doesn't use OverrideApprovalSchema
+📁 app/api/admin/expenses/override/route.ts
+The override route manually destructures { expenseId, action, comment } and does a manual length check instead of using the already-defined OverrideApprovalSchema. This skips input sanitization and means invalid action values like arbitrary strings reach the database.
+✅ FIX: Use OverrideApprovalSchema.safeParse instead of manual destructuring
+const result = OverrideApprovalSchema.safeParse(await req.json());
+if (!result.success) {
+  return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
+}
+const { expenseId, action, comment } = result.data;
+4.6 JWT Secret Key Not Validated at Startup
+[LOW]  JWT secret key source not validated at startup
+📁 lib/auth/jwtSecret.ts
+If JWT_SECRET is missing or short, tokens can be trivially forged. There's no startup assertion that the secret is present and has sufficient entropy.
+✅ FIX: Validate JWT_SECRET length at startup
+// lib/auth/jwtSecret.ts
+export function getJwtSecretKey() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET must be set and at least 32 characters long');
+  }
+  return new TextEncoder().encode(secret);
+}
+5. Performance Issues
+5.1 OCR Concurrency Guard Is Broken on Serverless
+[HIGH]  OCR concurrency guard is process-local and broken on serverless
+📁 app/api/ocr/route.ts (line 22)
+The activeRequests counter is a module-level variable. On Vercel/serverless, each invocation is potentially a new process so the counter is always 0. The spin-wait (setTimeout in a while loop) also wastes CPU.
+✅ FIX: Use Redis-based semaphore or per-user rate limiting
+// Simple fix: rely on API-level rate limiting per user instead:
+const rl = rateLimit('ocr:' + session.userId, 5, 60_000); // 5 scans/min
+if (!rl.ok) return NextResponse.json({ error: 'Too many OCR requests' }, { status: 429 });
+5.2 restcountries.com Fetched on Every Cold Start
+[MEDIUM]  restcountries.com is fetched on every company registration — no persistent cache
+📁 lib/api/restcountries.ts
+The cachedCountries array is a module-level variable — it persists within a process but resets on every cold start. If restcountries.com is down, company registration fails entirely.
+✅ FIX: Seed countries into MongoDB at startup or bundle as JSON
+// Short-term: add a timeout and fallback:
+const res = await fetch('https://restcountries.com/v3.1/all?fields=name,currencies', {
+  signal: AbortSignal.timeout(5000), // 5s timeout
+});
+// Long-term: store country→currency map in MongoDB or a JSON file
+// bundled with the app (the data changes maybe once a year).
+5.3 Dashboard Runs 4 Separate Aggregation Pipelines Per Load
+[MEDIUM]  Dashboard aggregate query runs 4 separate $facet pipelines per load
+📁 app/api/dashboard/employee/route.ts
+The dashboard route runs a large $facet aggregation on every page load with no caching. For users with many expenses this is expensive. Add a cache-control header and consider a 60-second TTL.
+✅ FIX: Add Cache-Control response headers
+return NextResponse.json({ total, approved, ... }, {
+  headers: {
+    'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
+  },
+});
+5.4 countDocuments Runs as Separate Query From Find
+[MEDIUM]  countDocuments runs as a second query when it could be a single $facet
+📁 app/api/expenses/route.ts (line ~58)
+Most list endpoints call Expense.countDocuments(filter) and then Expense.find(filter).skip(skip).limit(limit) — two round-trips to MongoDB. Using a $facet pipeline combines them into one query.
+✅ FIX: Combine count and data fetch into single $facet pipeline
+const [result] = await Expense.aggregate([
+  { $match: filter },
+  { $facet: {
+    data: [{ $sort: { createdAt: -1 } }, { $skip: skip }, { $limit: limit }],
+    count: [{ $count: 'total' }],
+  }},
+]);
+const expenses = result.data;
+const total = result.count[0]?.total ?? 0;
+6. Architecture Issues
+6.1 No Database Transactions — Partial Failures Leave Data Corrupted
+[MEDIUM]  No database transactions — partial failures leave data corrupted
+📁 app/api/auth/signup/route.ts, lib/approvalEngine.ts
+Signup creates a Company then a User across two separate operations. If User creation fails, the Company is orphaned. Similarly, applyApprovalAction creates an ApprovalAction then saves the Expense — if the expense save fails, the action log is inconsistent.
+✅ FIX: Wrap multi-document writes in MongoDB sessions (transactions)
+const session = await mongoose.startSession();
+try {
+  session.startTransaction();
+  const company = await Company.create([{...}], { session });
+  const user = await User.create([{...}], { session });
+  await session.commitTransaction();
+} catch (err) {
+  await session.abortTransaction();
+  throw err;
+} finally {
+  session.endSession();
+}
+6.2 approvalEngine.ts Calls connectDB() Internally
+[MEDIUM]  approvalEngine.ts calls connectDB() internally — breaks separation of concerns
+📁 lib/approvalEngine.ts, lib/ruleEngine.ts
+The approval engine and rule engine call connectDB() internally. This means they carry an implicit dependency on the database layer, making them impossible to unit-test without a real MongoDB connection.
+✅ FIX: Remove connectDB() from business logic — only routes should connect
+// Remove connectDB() calls from approvalEngine.ts and ruleEngine.ts
+// Enforce: routes connect to DB, then call business logic
+// Business logic functions assume a connection is already established
+6.3 Dual Logout Endpoints Create Inconsistency
+[MEDIUM]  Dual logout endpoints create inconsistency
+📁 app/api/auth/logout/route.ts + app/api/auth/signout/route.ts
+There are two separate logout routes. If one is used in some parts of the UI and the other elsewhere, cookie clearing behavior may differ.
+✅ FIX: Delete signout route and consolidate all references to /api/auth/logout
+// Delete app/api/auth/signout/route.ts
+// Ensure all UI components call POST /api/auth/logout only
+// grep -r "signout" app/ components/ to find all references
+7. Setup & Environment Issues
+7.1 No .env.example File
+[CRITICAL]  No .env.example file — new developers will have unknown required vars
+📁 Project root
+There is no .env.example or .env.local.example in the repository. Required environment variables are scattered across the codebase. New contributors cannot set up the project without reading every source file.
+✅ FIX: Create .env.example with all required variables
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=your-32-plus-char-secret-here
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your@email.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM=noreply@yourdomain.com
+CLOUDINARY_CLOUD_NAME=your-cloud
+CLOUDINARY_API_KEY=your-key
+CLOUDINARY_API_SECRET=your-secret
+GEMINI_API_KEY=your-gemini-key
+GROQ_API_KEY=your-groq-key
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+7.2 next.config.ts Missing Cloudinary Domain
+[HIGH]  next.config.ts missing Cloudinary domain — image tags will fail
+📁 next.config.ts
+Only images.unsplash.com is in remotePatterns. Cloudinary-hosted receipt images (res.cloudinary.com) are not whitelisted. Any <Image src={receiptUrl}> using Cloudinary URLs will fail with a 400 error in production.
+✅ FIX: Add res.cloudinary.com to remotePatterns
+remotePatterns: [
+  { protocol: 'https', hostname: 'images.unsplash.com' },
+  { protocol: 'https', hostname: 'res.cloudinary.com' },
+],
+7.3 next: "^16.2.1" Does Not Exist
+[MEDIUM]  next: "^16.2.1" — version likely doesn't exist (latest stable is 15.x)
+📁 package.json
+package.json lists "next": "^16.2.1". As of early 2026, Next.js 16 is not a released stable version. This will either break npm install or resolve to a pre-release build.
+✅ FIX: Pin to latest stable Next.js version
+// Check and pin to latest stable:
+npm install next@latest
+// Or pin to known good version:
+"next": "15.3.2"
+7.4 Seed Script Uses Weak Hardcoded Password
+[MEDIUM]  Seed script uses weak hardcoded password for all test users
+📁 scripts/seed.ts (line 42)
+bcrypt.hash("password123", 10) is used for all seeded users. If this script runs in a staging environment that shares Atlas infrastructure, these accounts are trivially compromised.
+✅ FIX: Read seed credentials from environment variables
+const seedPassword = process.env.SEED_PASSWORD;
+if (!seedPassword) throw new Error('Set SEED_PASSWORD env var');
+const passwordHash = await bcrypt.hash(seedPassword, 12);
+7.5 Problem Statement PDF Committed to Repo
+[LOW]  Problem statement PDF committed to repo (large binary, 1.2 MB)
+📁 "04 Oct '25 - Problem Statement _ Expense Management (2).pdf"
+A 1.2 MB PDF with spaces in the filename is committed to the root. Binary files bloat git history and slow clones.
+✅ FIX: Remove from git and add *.pdf to .gitignore
+git rm "04 Oct '25 - Problem Statement _ Expense Management (2).pdf"
+echo "*.pdf" >> .gitignore
+8. Testing Gaps
+Only 2 test files exist for 217 source files. Coverage is effectively 0% for all critical paths.
+8.1 Untested Critical Paths
+Path
+What Should Be Tested
+Authentication flows
+Login, signup, OTP verify, password reset, Google OAuth
+Approval engine logic
+Chain init, action processing, auto-approve, minApprovalPercent
+Multi-tenant isolation
+Cross-company data leakage prevention
+Rule engine conditions
+GT, GTE, IN operators, AND/OR logic evaluation
+FX conversion
+Live API + fallback + staleness paths
+File authorization
+Upload/delete ownership checks
+Role-based access
+Employee cannot act as manager, etc.
+8.2 Recommended Test Structure
+tests/
+  unit/
+    ruleEngine.test.ts       ← condition evaluation, operator logic
+    approvalEngine.test.ts   ← chain init, action processing
+    validation.test.ts       ← schema edge cases
+  integration/
+    auth.test.ts             ← login, signup, OTP flows
+    expenses.test.ts         ← CRUD + authorization
+    approvals.test.ts        ← full approval lifecycle
+  e2e/
+    tenantIsolation.test.ts  ← cross-company data leakage
+9. Code Quality Improvements
+9.1 Widespread Use of Record<string, any> and as any Casts
+[QUALITY]  Widespread use of Record<string, any> and as any casts
+📁 app/api/expenses/route.ts, app/api/admin/*, lib/approvalEngine.ts
+Filter objects are typed as Record<string, any>, Expense objects are cast with as any after creation. This defeats TypeScript's purpose entirely and hides real type errors.
+✅ FIX: Define proper filter interfaces per entity
+interface ExpenseFilter {
+  companyId: mongoose.Types.ObjectId | string;
+  employeeId?: mongoose.Types.ObjectId | string;
+  status?: ExpenseStatus | { $in: ExpenseStatus[] };
+  category?: ExpenseCategory;
+  description?: { $regex: string; $options: string };
+  expenseDate?: { $gte?: Date; $lte?: Date };
+  amountOriginal?: { $gte?: number; $lte?: number };
+}
+9.2 Duplicate Pagination Logic in 6+ Route Files
+[QUALITY]  Duplicate pagination logic in 6+ route files
+📁 app/api/expenses/route.ts, app/api/admin/expenses/route.ts, app/api/admin/users/route.ts, etc.
+The same pagination logic is copy-pasted into at least 6 route files. A change to pagination defaults must be made in 6 places.
+✅ FIX: Extract to shared pagination utility in lib/pagination.ts
+// lib/pagination.ts
+export function parsePagination(searchParams: URLSearchParams) {
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
+  return { page, limit, skip: (page - 1) * limit };
+}
+ 
+export function paginationMeta(page: number, limit: number, total: number) {
+  return { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total };
+}
+9.3 getApprovalFlow() Legacy Shim Never Removed
+[QUALITY]  getApprovalFlow() legacy shim exported but never removed
+📁 lib/approvalEngine.ts (bottom)
+The file exports getApprovalFlow() which is a no-op that always returns null, kept "for backward compat." If nothing imports it, it's dead code. If something imports it, that caller gets null and likely breaks silently.
+✅ FIX: Remove dead export after verifying no callers exist
+// 1. Run: grep -r "getApprovalFlow" app/ components/ lib/
+// 2. If no callers found: delete the export
+// 3. If callers found: fix them to not call it
+9.4 OTP Leaked to Logs in Email Utility
+[QUALITY]  Verbose console.log statements — OTP leak in email.ts is critical
+📁 lib/db.ts, lib/email.ts, app/api/ocr/route.ts, lib/approvalEngine.ts
+Production code contains developer debug logs. Critically, lib/email.ts logs OTPs to stdout: console.log("[DEV] OTP for user@email.com: 123456"). This leaks authentication codes to log storage.
+✅ FIX: Remove OTP log immediately. Replace all console.log with structured logger.
+// REMOVE this from lib/email.ts — leaks OTPs to logs:
+// if (process.env.NODE_ENV !== 'production') {
+//   console.log('[DEV] OTP for ' + to + ': ' + otp);  ← DELETE THIS
+// }
+ 
+// Replace console.log with structured logger:
+import pino from 'pino';
+const log = pino({ level: process.env.LOG_LEVEL || 'info' });
+9.5 Admin User Creation Auto-Assigns Creator as Manager
+[QUALITY]  Admin user creation auto-assigns current admin as manager
+📁 app/api/admin/users/route.ts (line ~75)
+managerId: managerId && managerId !== "none" ? managerId : session.userId — if no manager is provided, the creating admin becomes the manager. This is a silent fallback that may incorrectly set approval chains.
+✅ FIX: Require explicit managerId for EMPLOYEE role
+// Require explicit managerId for EMPLOYEE role:
+if (role === UserRole.EMPLOYEE && (!managerId || managerId === 'none')) {
+  return NextResponse.json({ error: 'Employees must have a manager assigned' }, { status: 400 });
+}
+managerId: (managerId && managerId !== 'none') ? managerId : null,
+10. Final Verdict
+Score: 5.5 / 10. The core business logic (approval engine, rule engine, multi-tenant data isolation) is well-designed and shows real engineering thought. However, multiple authentication and security failures make this unshippable as-is.
+What's Done Well
+✓  Policy-rule engine with snapshot chain — excellent design
+✓  Multi-tenant scoping consistent (companyId on every query)
+✓  HttpOnly cookies, sameSite=lax, secure in production
+✓  Zod validation on most API inputs
+✓  OCR with Gemini + Groq fallback is thoughtful
+✓  Expense deletion on failed approval init
+✓  Rate limiting exists (needs Redis upgrade)
+✓  CSRF guard on notification endpoint
+Production Blockers
+✗  middleware.ts not wired → all auth bypassable
+✗  Disabled users can still log in
+✗  googleId leaked in URL params
+✗  No file size limits (DoS risk)
+✗  File delete has no ownership check
+✗  In-memory rate limiter broken on serverless
+✗  ReDoS via unescaped regex search
+✗  No .env.example file
+✗  Stale FX rates used silently
+✗  Only 2 test files for 217 source files
+✗  Real receipts committed to git repo
+✗  next@^16.2.1 does not exist
+10.1 Priority Fix Order
+Priority
+Issue
+Why First
+#1
+Rename proxy.ts → middleware.ts
+Without this, every protected route is publicly accessible right now
+#2
+Add isDisabled check to login
+Disabled employees can still authenticate fully
+#3
+Fix OAuth googleId URL leak
+PII in URLs leaks to logs, analytics, and browser history
+#4
+Add file size limits to OCR
+A single upload can crash the server and drain API budgets
+#5
+Fix file delete ownership check
+Any employee can delete any other user's receipts
+#6
+Switch to Redis rate limiter
+Current rate limiter is non-functional on Vercel/serverless
+#7
+Fix ReDoS regex search
+Malformed search input can lock MongoDB thread
+#8
+Add .env.example
+Blocks new contributors from setting up the project
+#9
+Fix stale FX rate logic
+Silent stale rates cause permanent financial data corruption
+#10
+Fix minApprovalPercent logic
+Approval threshold calculations are incorrect for auto-approved chains
+#11
+Remove real receipts from git
+PII may be publicly accessible on GitHub
+#12
+Fix next@^16 version
+npm install may fail or resolve to broken pre-release
+ClearClaim Audit Report  |  github.com/pixelmeet/ClearClaim  |  Score: 5.5/10  |  Not Production Ready

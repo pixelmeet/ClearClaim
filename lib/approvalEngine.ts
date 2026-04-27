@@ -7,7 +7,6 @@ import Notification, { NotificationType } from '@/models/Notification';
 import { sendApprovalNeededEmail, sendExpenseStatusEmail } from '@/lib/notifications/email';
 import { selectRule, getResolvedChain, canUserActOnExpense as ruleCanUserAct, ResolvedStep } from '@/lib/ruleEngine';
 import mongoose from 'mongoose';
-import connectDB from '@/lib/db';
 
 // Re-export for backward compat
 export { canUserActOnExpense } from '@/lib/ruleEngine';
@@ -19,8 +18,6 @@ export { canUserActOnExpense } from '@/lib/ruleEngine';
  * snapshots the resolved chain, and advances through auto-approve steps.
  */
 export async function initializeApproval(expense: IExpense): Promise<void> {
-    await connectDB();
-
     const employeeId = (expense.employeeId as any)?._id ?? expense.employeeId;
     const employee = await User.findById(employeeId.toString());
     if (!employee) throw new Error('Employee not found');
@@ -43,6 +40,7 @@ export async function initializeApproval(expense: IExpense): Promise<void> {
         // No human approvers needed — auto-approve immediately
         expense.status = ExpenseStatus.APPROVED;
         expense.currentStepIndex = 0;
+        expense.currentApproverId = null;
         await expense.save();
 
         await ApprovalAction.create({
@@ -81,6 +79,7 @@ export async function initializeApproval(expense: IExpense): Promise<void> {
         expense.status = ExpenseStatus.APPROVED;
         expense.isAutoApproved = true;
         expense.currentStepIndex = startIndex;
+        expense.currentApproverId = null;
         await expense.save();
         await _notifyEmployee(expense, 'APPROVED', `All steps auto-approved by policy: ${result.ruleName}`);
         return;
@@ -88,6 +87,10 @@ export async function initializeApproval(expense: IExpense): Promise<void> {
 
     expense.status = ExpenseStatus.PENDING;
     expense.currentStepIndex = startIndex;
+    const firstApproverId = result.chain[startIndex]?.approverId;
+    expense.currentApproverId = firstApproverId
+      ? new mongoose.Types.ObjectId(firstApproverId)
+      : null;
     await expense.save();
 
     await _notifyNextApprover(expense, result.chain, startIndex);
@@ -100,8 +103,6 @@ export async function applyApprovalAction(
     action: ActionType,
     comment: string
 ): Promise<ExpenseStatus> {
-    await connectDB();
-
     if (action === ActionType.REJECT && (!comment || comment.trim().length < 3)) {
         throw new Error('A comment is required when rejecting an expense');
     }
@@ -133,11 +134,14 @@ export async function applyApprovalAction(
             const approvedCount = await ApprovalAction.countDocuments({
                 expenseId: expense._id,
                 action:    ActionType.APPROVE,
+                comment: { $not: /^\[AUTO-APPROVED/ },
             });
             // approvedCount already includes the action we just created
-            const pct = (approvedCount / chain.length) * 100;
+            const humanSteps = chain.filter((step) => !step.autoApprove).length;
+            const pct = humanSteps > 0 ? (approvedCount / humanSteps) * 100 : 100;
             if (pct >= rule.minApprovalPercent) {
                 expense.status = ExpenseStatus.APPROVED;
+                expense.currentApproverId = null;
                 await expense.save();
                 await _notifyEmployee(expense, 'APPROVED', '');
                 return ExpenseStatus.APPROVED;
@@ -161,6 +165,7 @@ export async function applyApprovalAction(
 
     if (nextIndex >= chain.length) {
         expense.status = ExpenseStatus.APPROVED;
+        expense.currentApproverId = null;
         await expense.save();
         await _notifyEmployee(expense, 'APPROVED', '');
         return ExpenseStatus.APPROVED;
@@ -168,6 +173,10 @@ export async function applyApprovalAction(
 
     expense.currentStepIndex = nextIndex;
     expense.status = ExpenseStatus.PENDING;
+    const nextApproverId = chain[nextIndex]?.approverId;
+    expense.currentApproverId = nextApproverId
+      ? new mongoose.Types.ObjectId(nextApproverId)
+      : null;
     await expense.save();
     await _notifyNextApprover(expense, chain, nextIndex);
     return ExpenseStatus.PENDING;
@@ -221,9 +230,3 @@ async function _notifyEmployee(expense: IExpense, status: 'APPROVED' | 'REJECTED
     }
 }
 
-// ─── Legacy compat exports ─────────────────────────────────────────────────
-// These are kept for backward compatibility with routes that import from here
-export async function getApprovalFlow(..._args: any[]): Promise<any> {
-    // No-op — kept for import compat. Routes will be updated to remove this.
-    return null;
-}

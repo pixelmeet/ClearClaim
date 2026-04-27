@@ -137,7 +137,7 @@ export function Sidebar({ userRole, className, forceExpanded = false, onNavigate
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
       router.refresh();
       router.push('/login');

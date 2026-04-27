@@ -5,6 +5,7 @@ import User, { UserRole } from '@/models/User';
 import ApprovalAction, { ActionType } from '@/models/ApprovalAction';
 import { getSession } from '@/lib/auth';
 import { sendExpenseStatusEmail } from '@/lib/notifications/email';
+import { OverrideApprovalSchema } from '@/lib/validation';
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,11 +14,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { expenseId, action, comment } = await req.json();
-
-        if (!expenseId || !action || !comment || comment.length < 5) {
-            return NextResponse.json({ error: 'Expense ID, action, and valid comment (min 5 chars) required' }, { status: 400 });
+        const parsed = OverrideApprovalSchema.safeParse(await req.json());
+        if (!parsed.success) {
+            return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
         }
+        const { expenseId, action, comment } = parsed.data;
 
         await connectToDatabase();
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
         if (!expense) return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
 
         // Force transition
-        const newStatus = action === 'APPROVE' ? ExpenseStatus.APPROVED : ExpenseStatus.REJECTED;
+        const newStatus = action === ActionType.OVERRIDE_APPROVE ? ExpenseStatus.APPROVED : ExpenseStatus.REJECTED;
         expense.status = newStatus;
         
         // Audit log for the override
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
             expenseId: expense._id,
             companyId: expense.companyId,
             approverId: session.userId,
-            action: action === 'APPROVE' ? ActionType.APPROVE : ActionType.REJECT,
+            action: action === ActionType.OVERRIDE_APPROVE ? ActionType.OVERRIDE_APPROVE : ActionType.OVERRIDE_REJECT,
             comment: `[ADMIN OVERRIDE] ${comment}`,
             stepIndex: expense.currentStepIndex
         });
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
                     status: newStatus,
                     amount: expense.amountOriginal,
                     currency: expense.currencyOriginal,
-                    comment: `Admin has manually ${action.toLowerCase()}ed this expense.`
+                    comment: `Admin has manually ${newStatus.toLowerCase()} this expense.`
                 });
             }
         } catch (e) {

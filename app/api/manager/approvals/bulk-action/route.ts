@@ -6,6 +6,14 @@ import { rateLimit } from '@/lib/rateLimit';
 import User from '@/models/User';
 import Expense from '@/models/Expense';
 import { applyApprovalAction, canUserActOnExpense } from '@/lib/approvalEngine';
+import { z } from 'zod';
+import { ActionType } from '@/lib/types';
+
+const BulkActionSchema = z.object({
+  expenseIds: z.array(z.string().min(24)).min(1).max(50),
+  action: z.enum([ActionType.APPROVE, ActionType.REJECT]),
+  comment: z.string().max(1000).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,21 +31,11 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const body = await req.json();
-    const { expenseIds, action, comment } = body ?? {};
-
-    if (!Array.isArray(expenseIds) || expenseIds.length === 0) {
-      return NextResponse.json(
-        { error: 'expenseIds must be a non-empty array' },
-        { status: 400 }
-      );
+    const parsed = BulkActionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-
-    if (expenseIds.length > 50) {
-      return NextResponse.json(
-        { error: 'Maximum 50 expenses per bulk action' },
-        { status: 400 }
-      );
-    }
+    const { expenseIds, action, comment } = parsed.data;
 
     const user = await User.findOne({ _id: session.userId, companyId: session.companyId });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });

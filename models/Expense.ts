@@ -28,6 +28,7 @@ export interface IExpense extends Document {
     expenseDate: Date;
     status: ExpenseStatus;
     currentStepIndex: number;
+    currentApproverId?: mongoose.Types.ObjectId | null;
     resolvedChain?: IChainStep[];
     isAutoApproved?: boolean;
     createdAt: Date;
@@ -53,6 +54,7 @@ const ExpenseSchema = new Schema<IExpense>(
         expenseDate: { type: Date, required: true },
         status: { type: String, enum: Object.values(ExpenseStatus), default: ExpenseStatus.DRAFT },
         currentStepIndex: { type: Number, default: 0 },
+        currentApproverId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         resolvedChain: [{
             stepIndex:    { type: Number, required: true },
             approverType: { type: String, required: true },
@@ -72,6 +74,7 @@ ExpenseSchema.index({ companyId: 1, employeeId: 1 });
 ExpenseSchema.index({ companyId: 1, status: 1 });
 ExpenseSchema.index({ companyId: 1, employeeId: 1, status: 1 });
 ExpenseSchema.index({ companyId: 1, createdAt: -1 });
+ExpenseSchema.index({ companyId: 1, currentApproverId: 1, status: 1, createdAt: -1 });
 
 const Expense: Model<IExpense> = mongoose.models.Expense || mongoose.model<IExpense>('Expense', ExpenseSchema);
 

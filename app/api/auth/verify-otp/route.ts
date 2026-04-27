@@ -5,11 +5,32 @@ import Company from "@/models/Company";
 import { createSessionCookie } from "@/lib/auth/createSessionCookie";
 import { UserRole } from "@/lib/types";
 import { getRoleHomePath } from "@/lib/auth/postLoginRedirect";
+import { timingSafeEqual } from "crypto";
+import { clientKeyFromRequest, rateLimit } from "@/lib/rateLimit";
+
+function safeCompareOtp(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json();
+    const emailForRateLimit = String(body?.email ?? "").trim().toLowerCase();
+    const rl = rateLimit(
+      `verify-otp:${emailForRateLimit}:${clientKeyFromRequest(request)}`,
+      5,
+      15 * 60 * 1000
+    );
+    if (!rl.ok) {
+      return NextResponse.json(
+        { message: "Too many attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     await connectToDatabase();
-    const { email, otp, flow = "password_reset" } = await request.json();
+    const { email, otp, flow = "password_reset" } = body;
 
     if (!email || !otp) {
       return NextResponse.json(
@@ -37,7 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "OTP has expired" }, { status: 400 });
     }
 
-    if (user.otp !== otp) {
+    if (!safeCompareOtp(user.otp, String(otp))) {
       return NextResponse.json({ message: "Invalid OTP" }, { status: 400 });
     }
 

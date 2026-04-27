@@ -92,13 +92,9 @@ export async function sendOTPEmail(
       );
     }
 
-    console.log("Message sent successfully: %s", info.messageId);
-    console.log("Email accepted recipients:", info.accepted.join(", "));
+    console.log("Email sent successfully:", info.messageId);
     if (info.rejected.length > 0) {
       console.warn("Email rejected recipients:", info.rejected.join(", "));
-    }
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[DEV] OTP for ${to}: ${otp}`);
     }
   } catch (error) {
     console.error("Error sending email:", error);

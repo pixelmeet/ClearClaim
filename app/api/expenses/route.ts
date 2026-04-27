@@ -8,6 +8,11 @@ import { CreateExpenseSchema } from '@/lib/validation';
 import { ExpenseStatus } from '@/lib/types'; // Use Types
 // Removing unused UserRole
 import { initializeApproval } from '@/lib/approvalEngine';
+import { paginationMeta, parsePagination } from '@/lib/pagination';
+
+function escapeRegex(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export async function GET(req: NextRequest) {
     try {
@@ -17,9 +22,7 @@ export async function GET(req: NextRequest) {
         await connectToDatabase();
 
         const { searchParams } = new URL(req.url);
-        const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
-        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
-        const skip = (page - 1) * limit;
+        const { page, limit, skip } = parsePagination(searchParams);
 
         // Employees see own expenses. Managers sees own? or Team's? 
         // Spec: "My expenses list" -> Own expenses.
@@ -48,7 +51,7 @@ export async function GET(req: NextRequest) {
         }
 
         const search = searchParams.get('search');
-        if (search) filter.description = { $regex: search, $options: 'i' };
+        if (search) filter.description = { $regex: escapeRegex(search), $options: 'i' };
 
         const expenses = await Expense.find(filter)
             .sort({ createdAt: -1 })
@@ -59,13 +62,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             expenses,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-                hasNextPage: page * limit < total,
-            },
+            pagination: paginationMeta(page, limit, total),
         });
     } catch {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -116,9 +113,11 @@ export async function POST(req: NextRequest) {
                     fromCurrency: currencyOriginal,
                     toCurrency: company.defaultCurrency,
                 });
-                if (!cached) {
+                const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
+                const isStale = !cached || Date.now() - cached.fetchedAt.getTime() > MAX_CACHE_AGE_MS;
+                if (isStale || !cached) {
                     return NextResponse.json(
-                        { error: 'Currency conversion unavailable and no cached rate exists. Try again later.' },
+                        { error: 'Currency conversion unavailable. Please try again later.' },
                         { status: 503 }
                     );
                 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,11 +22,9 @@ type Mode = 'create' | 'join';
 
 export function GoogleCompleteForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const fullName = searchParams.get('name') ?? '';
-  const email = searchParams.get('email') ?? '';
-  const googleId = searchParams.get('googleId') ?? '';
+  const [identity, setIdentity] = useState<{ fullName: string; email: string } | null>(null);
+  const fullName = identity?.fullName ?? '';
+  const email = identity?.email ?? '';
 
   const [mode, setMode] = useState<Mode>('create');
   const [countries, setCountries] = useState<CountryData[]>([]);
@@ -35,6 +33,21 @@ export function GoogleCompleteForm() {
   const [companyName, setCompanyName] = useState('');
   const [country, setCountry] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+
+  useEffect(() => {
+    fetch('/api/auth/google/complete')
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Google setup link expired');
+        setIdentity({
+          fullName: String(data.fullName ?? ''),
+          email: String(data.email ?? ''),
+        });
+      })
+      .catch(() => {
+        setIdentity(null);
+      });
+  }, []);
 
   useEffect(() => {
     fetch('https://restcountries.com/v3.1/all?fields=name,cca2')
@@ -51,11 +64,11 @@ export function GoogleCompleteForm() {
   }, []);
 
   const canSubmit = useMemo(() => {
-    if (!fullName || !email || !googleId) return false;
+    if (!fullName || !email) return false;
     if (!companyName.trim()) return false;
     if (mode === 'create') return !!country;
     return !!inviteCode.trim();
-  }, [fullName, email, googleId, companyName, mode, country, inviteCode]);
+  }, [fullName, email, companyName, mode, country, inviteCode]);
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -65,17 +78,11 @@ export function GoogleCompleteForm() {
         mode === 'create'
           ? {
               mode,
-              fullName,
-              email,
-              googleId,
               companyName,
               country,
             }
           : {
               mode,
-              fullName,
-              email,
-              googleId,
               companyName,
               inviteCode,
             };
@@ -101,7 +108,7 @@ export function GoogleCompleteForm() {
     }
   }
 
-  if (!fullName || !email || !googleId) {
+  if (!fullName || !email) {
     return (
       <div className="min-h-screen bg-[#0B0F1A] text-white flex items-center justify-center p-6">
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6">

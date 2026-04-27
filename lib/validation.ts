@@ -3,18 +3,22 @@ import { UserRole, ExpenseCategory, StepType, ActionType } from '@/lib/types';
 
 // Helper for ObjectId validation (basic string check for now, can be regex)
 const objectId = z.string().min(24, 'Invalid ID format');
+const strongPassword = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number');
 
 // --- Auth Schemas ---
 
 export const LoginSchema = z.object({
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(8),
 });
 
 export const SignupSchema = z.object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email format'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: strongPassword,
     companyName: z.string().min(2, 'Company name must be at least 2 characters').transform((v) => v.trim()),
     country: z.string().min(2, 'Country is required'),
     inviteCode: z.string().optional(),
@@ -43,7 +47,7 @@ export const UpdateCompanySchema = z.object({
 export const CreateUserSchema = z.object({
     name: z.string().min(2),
     email: z.string().email(),
-    password: z.string().min(6).or(z.literal('')).optional(), // Optional if auto-generated or invite flow
+    password: strongPassword.or(z.literal('')).optional(), // Optional if auto-generated or invite flow
     role: z.nativeEnum(UserRole),
     managerId: objectId.or(z.literal('')).or(z.literal('none')).optional().nullable(),
 });
@@ -51,7 +55,7 @@ export const CreateUserSchema = z.object({
 export const AdminCreateUserSchema = z.object({
     name: z.string().min(2, "Name is required"),
     email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters").optional(),
+    password: strongPassword.optional(),
     role: z.nativeEnum(UserRole),
     managerId: objectId.or(z.literal('')).or(z.literal('none')).optional().nullable(),
 });

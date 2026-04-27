@@ -5,6 +5,7 @@ import User from '@/models/User';
 import { loginUser } from '@/lib/auth';
 import { UserRole } from '@/lib/types';
 import { getRoleHomePath } from '@/lib/auth/postLoginRedirect';
+import { encodeGoogleOnboardingState } from '@/lib/auth/googleOnboardingState';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -60,14 +61,24 @@ export async function GET(req: NextRequest) {
         // HOWEVER, in a multi-tenant app, we need a company.
         // Redirect to a signup completion page if they are brand new.
         if (!user) {
-            // For now, redirect to signup with pre-filled info
-            const params = new URLSearchParams({
-                email,
+            const stateToken = await encodeGoogleOnboardingState({
+                email: email.toLowerCase(),
                 name: name || '',
                 googleId,
-                from: 'google'
             });
-            return NextResponse.redirect(`${app_url}/signup/google-complete?${params.toString()}`);
+            const response = NextResponse.redirect(`${app_url}/signup/google-complete`);
+            response.cookies.set('google_onboarding_state', stateToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 10 * 60,
+                path: '/',
+            });
+            return response;
+        }
+
+        if (user.isDisabled) {
+            return NextResponse.redirect(`${app_url}/login?error=account_disabled`);
         }
 
         // 4. Create Session

@@ -3,11 +3,25 @@ import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
 import { sendOTPEmail } from "@/lib/email";
 import crypto from "crypto";
+import { clientKeyFromRequest, rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json();
+    const emailInput = String(body?.email ?? "").trim().toLowerCase();
+    const rl = rateLimit(
+      `forgot-password:${emailInput}:${clientKeyFromRequest(request)}`,
+      3,
+      15 * 60 * 1000
+    );
+    if (!rl.ok) {
+      return NextResponse.json(
+        { message: "If an account exists, an OTP has been sent." },
+        { status: 200 }
+      );
+    }
     await connectToDatabase();
-    const { email } = await request.json();
+    const { email } = body;
 
     if (!email) {
       return NextResponse.json(

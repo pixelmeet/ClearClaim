@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { cloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
+import connectToDatabase from "@/lib/db";
+import Expense from "@/models/Expense";
+import { UserRole } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
@@ -17,8 +20,20 @@ export async function POST(req: Request) {
     }
 
     if (!isCloudinaryConfigured()) {
-      console.error("Missing Cloudinary env: CLOUD_NAME, API_KEY, API_SECRET");
+      console.error("Missing Cloudinary env: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
       return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
+    }
+
+    await connectToDatabase();
+    const escapedPublicId = publicId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const scopedExpense = await Expense.findOne({
+      companyId: session.companyId,
+      receiptUrl: { $regex: escapedPublicId, $options: "i" },
+      ...(session.role === UserRole.EMPLOYEE ? { employeeId: session.userId } : {}),
+    }).select("_id");
+
+    if (!scopedExpense) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await cloudinary.uploader.destroy(publicId);

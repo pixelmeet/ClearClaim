@@ -6,28 +6,47 @@ import Company from '@/models/Company';
 import { getCurrencyForCountry } from '@/lib/api/restcountries';
 import { createSessionCookie } from '@/lib/auth/createSessionCookie';
 import { UserRole } from '@/lib/types';
+import { decodeGoogleOnboardingState } from '@/lib/auth/googleOnboardingState';
 
 const GoogleCompleteSchema = z.discriminatedUnion('mode', [
   z.object({
     mode: z.literal('create'),
-    fullName: z.string().min(1),
-    email: z.string().email(),
-    googleId: z.string().min(1),
     companyName: z.string().min(2),
     country: z.string().min(2),
   }),
   z.object({
     mode: z.literal('join'),
-    fullName: z.string().min(1),
-    email: z.string().email(),
-    googleId: z.string().min(1),
     companyName: z.string().min(2),
     inviteCode: z.string().min(4),
   }),
 ]);
 
+export async function GET(req: NextRequest) {
+  const token = req.cookies.get('google_onboarding_state')?.value;
+  if (!token) {
+    return NextResponse.json({ error: 'Missing onboarding state.' }, { status: 401 });
+  }
+  const state = await decodeGoogleOnboardingState(token);
+  if (!state) {
+    return NextResponse.json({ error: 'Invalid or expired onboarding state.' }, { status: 401 });
+  }
+  return NextResponse.json({
+    fullName: state.name,
+    email: state.email,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const stateToken = req.cookies.get('google_onboarding_state')?.value;
+    if (!stateToken) {
+      return NextResponse.json({ error: 'Google onboarding session expired.' }, { status: 401 });
+    }
+    const onboardingState = await decodeGoogleOnboardingState(stateToken);
+    if (!onboardingState) {
+      return NextResponse.json({ error: 'Invalid Google onboarding session.' }, { status: 401 });
+    }
+
     const body = await req.json();
     const parsed = GoogleCompleteSchema.safeParse(body);
     if (!parsed.success) {
@@ -37,9 +56,9 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const data = parsed.data;
-    const emailLower = data.email.trim().toLowerCase();
-    const name = data.fullName.trim();
-    const googleId = data.googleId.trim();
+    const emailLower = onboardingState.email;
+    const name = onboardingState.name;
+    const googleId = onboardingState.googleId;
 
     const existingByGoogle = await User.findOne({ googleId });
     if (existingByGoogle) {
@@ -91,7 +110,9 @@ export async function POST(req: NextRequest) {
         companyId: user.companyId.toString(),
       });
 
-      return NextResponse.json({ success: true, redirectTo: '/admin' });
+      const response = NextResponse.json({ success: true, redirectTo: '/admin' });
+      response.cookies.delete('google_onboarding_state');
+      return response;
     }
 
     const companyName = data.companyName.trim();
@@ -123,7 +144,9 @@ export async function POST(req: NextRequest) {
       companyId: user.companyId.toString(),
     });
 
-    return NextResponse.json({ success: true, redirectTo: '/dashboard' });
+    const response = NextResponse.json({ success: true, redirectTo: '/dashboard' });
+    response.cookies.delete('google_onboarding_state');
+    return response;
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid country selection') {
       return NextResponse.json({ error: 'Invalid country selection.' }, { status: 400 });

@@ -5,6 +5,7 @@ import User, { UserRole } from '@/models/User';
 import { getSession } from '@/lib/auth';
 import { CreateUserSchema } from '@/lib/validation';
 import bcrypt from 'bcryptjs';
+import { paginationMeta, parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
     try {
@@ -17,9 +18,7 @@ export async function GET(req: NextRequest) {
 
         // Pagination
         const { searchParams } = new URL(req.url);
-        const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
-        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
-        const skip = (page - 1) * limit;
+        const { page, limit, skip } = parsePagination(searchParams);
 
         const role = searchParams.get('role');
         const filter: Record<string, any> = { companyId: session.companyId };
@@ -38,13 +37,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             users,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-                hasNextPage: page * limit < total,
-            },
+            pagination: paginationMeta(page, limit, total),
         });
     } catch (error) {
         console.error('Fetch users error:', error);
@@ -78,8 +71,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 });
         }
 
+        if (role === UserRole.EMPLOYEE && (!managerId || managerId === 'none')) {
+            return NextResponse.json(
+                { error: 'Employees must have a manager assigned' },
+                { status: 400 }
+            );
+        }
+
         const finalPassword =
-            password && password.length >= 6
+            password && password.length >= 8
                 ? password
                 : randomBytes(18).toString('base64url');
         const passwordHash = await bcrypt.hash(finalPassword, 10);
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
             email: email.trim().toLowerCase(),
             passwordHash,
             role,
-            managerId: managerId && managerId !== 'none' ? managerId : session.userId,
+            managerId: managerId && managerId !== 'none' ? managerId : undefined,
         });
 
         const safeUser = {
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             user: safeUser,
-            ...(password && password.length >= 6
+            ...(password && password.length >= 8
                 ? {}
                 : { generatedPassword: finalPassword }),
         });

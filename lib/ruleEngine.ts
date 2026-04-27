@@ -9,7 +9,6 @@ import PolicyRule, {
   StepApproverType,
 } from '@/models/PolicyRule';
 import User from '@/models/User';
-import connectDB from '@/lib/db';
 import type { IExpense } from '@/models/Expense';
 import type { IUser } from '@/models/User';
 
@@ -47,8 +46,6 @@ export async function selectRule(
   expense: IExpense,
   employee: IUser
 ): Promise<RuleEngineResult> {
-  await connectDB();
-
   const companyId = expense.companyId;
 
   // Load all active rules for this company, ordered by priority ASC (1 = highest)

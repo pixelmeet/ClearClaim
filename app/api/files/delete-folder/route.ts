@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     if (!isCloudinaryConfigured()) {
-      console.error("Missing Cloudinary env: CLOUD_NAME, API_KEY, API_SECRET");
+      console.error("Missing Cloudinary env: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
       return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
     }
 

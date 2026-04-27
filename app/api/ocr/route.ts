@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSession } from '@/lib/auth';
 import { RECEIPT_EXTRACTION_PROMPT } from '@/lib/receipt-prompt';
 import { normalizeReceiptData } from '@/lib/normalize-receipt';
+import { rateLimit } from '@/lib/rateLimit';
 
 function getGenAI(): GoogleGenerativeAI {
   const key = process.env.GEMINI_API_KEY;
@@ -18,6 +19,7 @@ function getGenAI(): GoogleGenerativeAI {
 // For production, consider a distributed queue like BullMQ + Redis.
 let activeRequests = 0;
 const MAX_CONCURRENT = 2;
+const OCR_MAX_SIZE = 10 * 1024 * 1024;
 
 async function limitConcurrency<T>(fn: () => Promise<T>): Promise<T> {
     while (activeRequests >= MAX_CONCURRENT) {
@@ -135,11 +137,21 @@ export async function POST(req: NextRequest) {
     try {
         const session = await getSession();
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const rl = rateLimit(`ocr:${session.userId}`, 5, 60_000);
+        if (!rl.ok) {
+            return NextResponse.json(
+                { error: 'Too many OCR requests. Please try again later.' },
+                { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } }
+            );
+        }
 
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
         if (!file || !file.type.startsWith('image/')) {
             return NextResponse.json({ error: 'Valid image file is required' }, { status: 400 });
+        }
+        if (file.size > OCR_MAX_SIZE) {
+            return NextResponse.json({ error: 'File too large (max 10 MB)' }, { status: 413 });
         }
 
         const arrayBuffer = await file.arrayBuffer();
